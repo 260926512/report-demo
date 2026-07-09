@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="icon" href="data:,">
+<title>健康沙盘（方案B · 可交互原型）</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-font-smoothing:antialiased; }
+:root{
+  --bg:#f2f8fb;
+  --bg2:#e8f1f6;
+  --panel:rgba(255,255,255,.72);
+  --panel2:rgba(255,255,255,.88);
+  --line:rgba(24,60,90,.13);
+  --txt:#12293a;
+  --txt2:rgba(18,41,58,.66);
+  --txt3:rgba(18,41,58,.42);
+  --cyan:#0891b2;
+  --teal:#0f9488;
+  --amber:#b7791f;
+  --red:#d24a43;
+  --green:#239b62;
+  --mono:"SF Mono","Roboto Mono",ui-monospace,Menlo,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif;
+}
+html,body{ height:100%; }
+body{
+  display:grid; place-items:center; padding:24px 12px; overflow:hidden;
+  background:
+    radial-gradient(800px 500px at 15% 0%, rgba(8,145,178,.10), transparent 60%),
+    radial-gradient(700px 450px at 90% 100%, rgba(15,148,136,.09), transparent 60%),
+    linear-gradient(180deg,#f7fbfd,#e3eef4);
+  color:var(--txt); font-family:var(--sans);
+}
+button{ border:0; background:none; font:inherit; color:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+
+.phone{ width:min(390px,calc(100vw - 20px)); height:min(844px,calc(100dvh - 32px)); min-height:700px;
+  background:linear-gradient(145deg,#ffffff,#c9d8e2); border-radius:56px; padding:9px; position:relative;
+  box-shadow:0 0 0 1px rgba(255,255,255,.9), 0 30px 70px -28px rgba(24,60,90,.35); }
+.screen{ width:100%; height:100%; border-radius:47px; overflow:hidden; background:var(--bg); position:relative; display:flex; flex-direction:column; }
+.screen::before{ content:""; position:absolute; inset:0; pointer-events:none; z-index:0;
+  background:
+    linear-gradient(rgba(8,145,178,.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(8,145,178,.07) 1px, transparent 1px);
+  background-size:26px 26px; mask-image:radial-gradient(80% 60% at 50% 30%, #000, transparent); }
+.island{ position:absolute; top:20px; left:50%; transform:translateX(-50%); width:118px; height:34px; background:#000; border-radius:20px; z-index:60; }
+.statusbar{ height:60px; flex-shrink:0; display:flex; align-items:flex-end; justify-content:space-between; padding:0 32px 8px; font-size:14px; font-weight:600; position:relative; z-index:5; }
+.home-bar{ position:absolute; bottom:8px; left:50%; transform:translateX(-50%); width:134px; height:5px; border-radius:3px; background:rgba(18,41,58,.22); z-index:60; }
+
+.app-body{ flex:1; overflow-y:auto; overflow-x:hidden; padding:6px 18px 116px; position:relative; z-index:5; }
+.screen.sim-active .app-body{ padding-bottom:230px; }
+.app-body::-webkit-scrollbar{ display:none; }
+.page{ display:none; animation:rise .25s ease both; }
+.page.on{ display:block; }
+@keyframes rise{ from{ opacity:0; transform:translateY(8px);} to{ opacity:1; transform:none;} }
+.app-head{ display:flex; align-items:center; justify-content:space-between; padding:8px 2px 14px; }
+.app-head .t{ font-size:22px; font-weight:800; letter-spacing:1px; }
+.app-head .t small{ display:block; font-size:10.5px; font-weight:400; color:var(--txt3); letter-spacing:2px; margin-top:3px; }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:22px; padding:16px; margin-bottom:14px; position:relative;
+  backdrop-filter:blur(20px); box-shadow:inset 0 1px 0 rgba(255,255,255,.85), 0 12px 28px rgba(24,60,90,.07); }
+.card-title{ display:flex; align-items:center; gap:8px; font-size:11.5px; font-weight:700; letter-spacing:2px; color:var(--txt2); margin-bottom:13px; }
+.card-title::before{ content:""; width:14px; height:2px; background:var(--cyan); border-radius:2px; }
+.card-title .chip-r{ margin-left:auto; }
+.chip{ font-size:9.5px; font-weight:700; padding:3px 9px; border-radius:99px; letter-spacing:1px; }
+.chip.cyan{ color:var(--cyan); background:rgba(8,145,178,.11); }
+.chip.amber{ color:var(--amber); background:rgba(183,121,31,.13); }
+.chip.red{ color:var(--red); background:rgba(210,74,67,.12); }
+.chip.green{ color:var(--green); background:rgba(35,155,98,.13); }
+.chip.grey{ color:var(--txt2); background:rgba(18,41,58,.06); }
+.hint{ font-size:10px; color:var(--txt3); text-align:center; margin-top:8px; letter-spacing:.5px; }
+.hint b{ color:var(--cyan); font-weight:600; }
+
+.tabbar{ position:absolute; bottom:0; left:0; right:0; z-index:50; height:90px; padding:10px 10px 26px;
+  background:rgba(255,255,255,.82); backdrop-filter:blur(28px); border-top:1px solid var(--line); display:flex; }
+.tab{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+  color:var(--txt3); font-size:10.5px; letter-spacing:2px; position:relative; }
+.tab b{ font-size:15px; font-weight:800; font-family:var(--mono); }
+.tab.on{ color:var(--cyan); }
+.tab.on::after{ content:""; position:absolute; top:-10px; width:22px; height:3px; border-radius:2px; background:var(--cyan); box-shadow:0 0 12px var(--cyan); }
+
+/* ===== 仪表（现值 + 三年趋势，可点击解读） ===== */
+.gauge-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.gauge{ border-radius:18px; padding:12px 12px 10px; background:var(--panel2); border:1px solid var(--line); position:relative; text-align:left; cursor:pointer; }
+.gauge .g-tag{ position:absolute; top:9px; right:9px; }
+.g-name{ font-size:11.5px; font-weight:700; letter-spacing:.5px; }
+.g-val{ margin-top:5px; font-family:var(--mono); font-size:20px; font-weight:800; }
+.g-val small{ font-size:9px; color:var(--txt3); margin-left:3px; font-family:var(--sans); font-weight:600; }
+.g-trend{ display:flex; gap:9px; align-items:flex-end; margin-top:8px; height:46px; }
+.g-trend > span{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:2px; }
+.g-trend em{ font-style:normal; font-size:8.5px; color:var(--txt2); font-family:var(--mono); font-weight:700; }
+.g-trend i{ width:100%; max-width:22px; border-radius:4px 4px 2px 2px; height:var(--h); background:var(--c); }
+.g-trend .gy{ font-size:7.5px; color:var(--txt3); }
+.g-ref{ margin-top:8px; font-size:10px; line-height:1.45; color:var(--txt2); }
+.g-ref .g-open{ display:block; margin-top:2px; font-size:10.5px; font-weight:800; letter-spacing:.5px; color:var(--cyan); }
+/* 健康分（现状盘） */
+.sc-row{ display:flex; gap:16px; align-items:center; }
+.sc-big b{ font-family:var(--mono); font-size:42px; font-weight:800; color:var(--amber); line-height:1; }
+.sc-big span{ display:block; margin-top:4px; font-size:10px; color:var(--txt3); letter-spacing:1px; }
+.sc-trend{ flex:1; display:flex; gap:14px; align-items:flex-end; height:64px; justify-content:flex-end; padding-right:6px; }
+.sct{ display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:2px; width:40px; }
+.sct em{ font-style:normal; font-size:9.5px; font-weight:800; font-family:var(--mono); color:var(--txt2); }
+.sct i{ width:100%; max-width:26px; border-radius:5px 5px 2px 2px; height:var(--h); background:var(--c); }
+.sct span{ font-size:8px; color:var(--txt3); }
+/* 推演结果 · 变化式 */
+.score-fore{ display:flex; justify-content:space-between; align-items:center; gap:10px; padding:11px 13px; border-radius:14px;
+  background:rgba(8,145,178,.08); border:1px solid rgba(8,145,178,.28); margin-bottom:8px; }
+.score-fore > span{ font-size:10.5px; font-weight:700; letter-spacing:1px; color:var(--cyan); }
+.score-fore .p-line b{ font-size:23px; }
+.p-line{ display:flex; align-items:baseline; gap:6px; }
+.p-line em{ font-style:normal; font-family:var(--mono); font-size:12px; color:var(--txt3); font-weight:700; }
+.p-line i{ font-style:normal; font-size:10px; color:var(--txt3); }
+.p-line b{ font-family:var(--mono); font-size:18px; font-weight:800; }
+.sim-say{ font-size:11px; line-height:1.75; color:var(--txt2); padding:9px 12px; border-radius:13px; margin-bottom:10px;
+  background:rgba(35,155,98,.07); border-left:3px solid var(--teal); font-weight:600; }
+/* 指标解读面板 */
+.bsheet{ position:absolute; inset:0; z-index:80; background:rgba(232,241,246,.78); backdrop-filter:blur(10px);
+  opacity:0; pointer-events:none; transition:opacity .3s; }
+.bsheet.on{ opacity:1; pointer-events:auto; }
+.bs-card{ position:absolute; left:8px; right:8px; bottom:100px; border-radius:24px; padding:15px 16px;
+  background:rgba(255,255,255,.97); border:1px solid rgba(8,145,178,.3); box-shadow:0 -14px 44px rgba(24,60,90,.22);
+  max-height:calc(100% - 190px); display:flex; flex-direction:column; }
+.bs-head{ display:flex; align-items:center; gap:9px; }
+.bs-head b{ font-size:15px; letter-spacing:1px; flex:1; }
+.bs-close{ width:44px; height:44px; margin:-8px -10px -8px 0; color:var(--txt2); font-size:15px; }
+.bs-body{ overflow-y:auto; margin:0 -6px; padding:0 6px; scrollbar-width:none; }
+.bs-body::-webkit-scrollbar{ display:none; }
+.bi-vals{ margin-top:9px; padding:10px 12px; border-radius:13px; background:rgba(18,41,58,.05); border:1px solid var(--line);
+  font-family:var(--mono); font-size:15px; font-weight:800; }
+.bi-vals span{ display:block; margin-top:4px; font-family:var(--sans); font-size:9.5px; font-weight:650; color:var(--txt3); }
+.bi-sec{ font-size:10px; font-weight:800; letter-spacing:2px; color:var(--cyan); margin:11px 0 6px; }
+.bi-exp{ display:flex; gap:8px; padding:5px 0; align-items:flex-start; }
+.bi-exp b{ flex-shrink:0; font-size:9.5px; color:var(--cyan); border:1px solid rgba(8,145,178,.35); border-radius:99px; padding:3px 8px; white-space:nowrap; margin-top:1px; }
+.bi-exp p{ font-size:11.5px; line-height:1.7; color:var(--txt2); }
+.bi-sum{ margin-top:6px; padding:10px 12px; border-radius:13px; font-size:12px; line-height:1.75; font-weight:600;
+  background:rgba(8,145,178,.07); border-left:3px solid var(--cyan); }
+.bi-sum::before{ content:"综合评估"; display:block; font-size:8.5px; letter-spacing:2px; color:var(--cyan); margin-bottom:4px; font-weight:800; }
+.bi-act{ display:flex; gap:8px; align-items:center; margin-top:9px; padding:9px 12px; border-radius:13px;
+  background:rgba(35,155,98,.08); border:1px solid rgba(35,155,98,.28); font-size:11.5px; font-weight:600; color:var(--green); }
+.bi-cta{ width:100%; min-height:44px; margin-top:11px; border-radius:14px; color:#fff; font-size:12.5px; font-weight:800; letter-spacing:1px;
+  background:linear-gradient(90deg,#0f9488,#0891b2); box-shadow:0 8px 20px -8px rgba(8,145,178,.5); }
+
+/* F2 距离条 */
+.dist-track{ position:relative; height:12px; border-radius:8px; margin:22px 4px 8px;
+  background:linear-gradient(90deg, rgba(45,212,191,.8), rgba(251,191,36,.8) 55%, rgba(251,113,133,.85)); }
+.dist-marker{ position:absolute; top:-8px; transform:translateX(-50%); width:4px; height:28px; border-radius:3px; background:var(--txt); box-shadow:0 0 0 3px rgba(255,255,255,.9); transition:left .3s ease; }
+.dist-marker::before{ content:attr(data-t); position:absolute; top:-22px; left:50%; transform:translateX(-50%); white-space:nowrap;
+  font-size:10px; font-weight:700; color:var(--txt); background:rgba(255,255,255,.92); padding:2px 9px; border-radius:99px; border:1px solid var(--line); }
+.dist-scale{ display:flex; justify-content:space-between; font-size:9px; color:var(--txt3); padding:0 4px; }
+.dist-track.now-dist{ margin:28px 4px 12px; }
+.dist-track.now-dist .dist-marker{ top:-7px; height:30px; }
+.dist-track.now-dist .dist-marker::before{ top:-18px; }
+
+/* ===== 推演台 ===== */
+.sim-block{ margin-bottom:4px; }
+.sim-row{ margin-bottom:14px; }
+.sim-top{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:7px; }
+.sim-top b{ font-size:12.5px; font-weight:700; letter-spacing:1px; }
+.sim-top span{ font-family:var(--mono); font-size:13px; font-weight:800; color:var(--cyan); }
+.sim-zone{ position:relative; height:44px; touch-action:none; cursor:pointer; }
+.sim-track{ position:absolute; left:0; right:0; top:20px; height:5px; border-radius:3px; background:rgba(18,41,58,.12); }
+.sim-fill{ position:absolute; left:0; top:20px; height:5px; border-radius:3px; background:linear-gradient(90deg, var(--cyan), rgba(34,211,238,.35)); }
+.sim-handle{ position:absolute; top:9px; transform:translateX(-50%); width:26px; height:26px; border-radius:50%;
+  background:#fff; box-shadow:0 2px 8px rgba(24,60,90,.3), 0 0 0 5px rgba(8,145,178,.14); }
+.sim-note{ display:flex; justify-content:space-between; font-size:9px; color:var(--txt3); font-family:var(--mono); }
+.toggle-row{ display:flex; align-items:center; justify-content:space-between; padding:4px 0 2px; }
+.toggle-row b{ font-size:12.5px; letter-spacing:1px; }
+.tgl{ width:52px; height:30px; border-radius:99px; background:rgba(18,41,58,.16); position:relative; transition:background .2s; }
+.tgl::before{ content:""; position:absolute; inset:-8px; }
+.tgl::after{ content:""; position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:50%; background:#fff; transition:left .2s; box-shadow:0 1px 4px rgba(24,60,90,.3); }
+.tgl.on{ background:var(--teal); }
+.tgl.on::after{ left:25px; }
+/* 预测输出 */
+.pred-grid{ display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+.pred{ border-radius:15px; padding:10px 11px; background:var(--panel2); border:1px solid var(--line); position:relative; }
+.pred b{ font-family:var(--mono); font-size:16.5px; font-weight:800; transition:color .2s; display:block; }
+.pred span{ font-size:10px; color:var(--txt2); display:block; margin-top:2px; }
+.pred .lens{ position:absolute; top:7px; right:8px; font-size:8.5px; letter-spacing:1px; color:var(--txt3); border:1px solid var(--line); border-radius:99px; padding:2px 7px; }
+.pred .conf{ display:block; font-size:8.5px; color:var(--txt3); margin-top:4px; letter-spacing:.5px; }
+.pred .conf b{ display:inline; font-size:8.5px; color:var(--teal); font-family:var(--sans); font-weight:700; }
+.cert{ display:flex; gap:10px; align-items:center; padding:11px 14px; border-radius:16px; margin-bottom:14px;
+  background:linear-gradient(90deg, rgba(8,145,178,.10), rgba(255,255,255,.6)); border:1px solid rgba(8,145,178,.28); backdrop-filter:blur(16px); }
+.cert svg{ width:18px; height:18px; stroke:var(--cyan); fill:none; stroke-width:1.8; flex-shrink:0; }
+.cert .c-t{ flex:1; font-size:11.5px; font-weight:700; letter-spacing:1px; color:var(--cyan); }
+.cert .c-t small{ display:block; font-size:9px; color:var(--txt3); font-weight:400; margin-top:2px; letter-spacing:.5px; }
+.best-btn{ width:100%; min-height:46px; margin-top:12px; border-radius:15px; font-size:13px; font-weight:800; letter-spacing:2px;
+  color:#fff; background:linear-gradient(90deg,#0f9488,#0891b2); box-shadow:0 10px 26px -10px rgba(8,145,178,.55); }
+
+/* ===== 固定底部变量控制台 ===== */
+.sim-dock{ position:absolute; left:10px; right:10px; bottom:90px; z-index:55; display:none; padding:10px;
+  border-radius:24px; background:rgba(255,255,255,.92); border:1px solid rgba(8,145,178,.24);
+  backdrop-filter:blur(26px); box-shadow:0 -16px 42px rgba(24,60,90,.18), inset 0 1px 0 rgba(255,255,255,.86); }
+.screen.sim-active .sim-dock{ display:block; }
+.dock-presets{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:8px; }
+.preset{ min-height:32px; border-radius:12px; font-size:11px; font-weight:800; letter-spacing:1px; color:var(--txt2);
+  background:rgba(18,41,58,.05); border:1px solid rgba(18,41,58,.08); }
+.preset.on{ color:#fff; background:linear-gradient(90deg,#0f9488,#0891b2); border-color:transparent; box-shadow:0 8px 18px -10px rgba(8,145,178,.7); }
+.var-pills{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+.var-pill{ min-width:0; min-height:46px; border-radius:15px; padding:7px 5px; text-align:center;
+  background:rgba(8,145,178,.07); border:1px solid rgba(8,145,178,.16); }
+.var-pill span{ display:block; font-size:9.5px; letter-spacing:1px; color:var(--txt3); }
+.var-pill b{ display:block; margin-top:3px; font-family:var(--mono); font-size:11px; color:var(--cyan); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.var-pill.active{ background:rgba(8,145,178,.14); border-color:rgba(8,145,178,.42); }
+.var-pill.switch.on b{ color:var(--green); }
+.dock-editor{ display:none; margin-top:9px; padding:10px; border-radius:17px; background:rgba(242,248,251,.86); border:1px solid rgba(8,145,178,.18); }
+.sim-dock.editing .dock-editor{ display:block; }
+.edit-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px; }
+.edit-head b{ font-size:12px; letter-spacing:1px; }
+.edit-head button{ min-width:34px; min-height:34px; border-radius:50%; color:var(--txt3); font-size:15px; }
+.edit-panel{ display:none; }
+.edit-panel.on{ display:block; }
+.edit-panel .sim-zone{ height:36px; }
+.edit-panel .sim-track,.edit-panel .sim-fill{ top:16px; }
+.edit-panel .sim-handle{ top:5px; }
+
+/* ===== 计划页 ===== */
+.plan-item{ display:flex; gap:11px; padding:12px 2px; min-height:44px; align-items:flex-start; }
+.plan-item + .plan-item{ border-top:1px solid var(--line); }
+.plan-item .n{ width:26px; height:26px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:800; font-family:var(--mono); color:#fff; background:var(--cyan); }
+.plan-item p{ font-size:12px; line-height:1.65; color:var(--txt2); }
+.plan-item p b{ color:var(--txt); display:block; font-size:12.5px; margin-bottom:2px; }
+.commit-btn{ width:100%; min-height:48px; margin-top:4px; border-radius:15px; font-size:13px; font-weight:800; letter-spacing:2px;
+  color:#fff; background:linear-gradient(90deg,#239b62,#0f9488); }
+.commit-btn.done{ background:rgba(35,155,98,.12); color:var(--green); border:1px solid rgba(35,155,98,.4); }
+.legal{ font-size:10px; line-height:1.8; color:var(--txt3); padding:10px 2px 0; text-align:center; }
+
+/* ===== 揭幕片「倒放」 ===== */
+.intro{ position:absolute; inset:0; z-index:100; overflow:hidden; display:flex; align-items:center; justify-content:center;
+  background:radial-gradient(80% 55% at 50% 10%, rgba(8,145,178,.13), transparent 60%), linear-gradient(180deg,#f7fbfd,#e4eef4);
+  color:var(--txt); }
+.intro.hidden{ display:none; }
+.intro.fin .intro-skip{ display:none; }
+.intro-skip{ position:absolute; top:24px; right:20px; z-index:30; min-height:38px; padding:0 18px; border-radius:99px;
+  color:var(--txt2); font-size:12px; letter-spacing:2px; background:rgba(255,255,255,.8); border:1px solid var(--line); }
+.iscene{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:30px; opacity:0; pointer-events:none; transition:opacity .7s ease; }
+.iscene.on{ opacity:1; pointer-events:auto; }
+.iscene .inner{ text-align:center; max-width:320px; }
+.i-name{ font-size:31px; font-weight:800; letter-spacing:3px; }
+.i-sub{ font-size:12.5px; color:var(--txt2); letter-spacing:1px; margin-top:10px; line-height:1.8; }
+.i-line{ font-size:18.5px; line-height:1.95; font-weight:700; }
+.i-line em{ font-style:normal; color:var(--teal); }
+.rewind{ font-family:var(--mono); }
+.rw-year{ font-size:56px; font-weight:800; letter-spacing:4px; color:var(--txt); text-shadow:0 0 24px rgba(8,145,178,.3); }
+.rw-rows{ margin-top:22px; display:grid; gap:10px; }
+.rw-row{ display:flex; justify-content:space-between; gap:20px; font-size:15px; padding:9px 16px; border-radius:12px;
+  background:rgba(255,255,255,.75); border:1px solid var(--line); }
+.rw-row span{ color:var(--txt2); font-family:var(--sans); font-size:12px; align-self:center; letter-spacing:1px; }
+.rw-row b{ font-weight:800; color:var(--cyan); min-width:64px; text-align:right; }
+.rw-cap{ margin-top:16px; font-size:11px; color:var(--txt3); letter-spacing:2px; font-family:var(--sans); }
+.i-enter{ margin-top:26px; min-height:46px; padding:0 32px; border-radius:99px; color:#fff; font-size:14px; font-weight:800; letter-spacing:2px;
+  background:linear-gradient(90deg,#0f9488,#0891b2); box-shadow:0 14px 34px rgba(24,60,90,.3); }
+.i-steps{ position:absolute; bottom:26px; left:0; right:0; display:flex; justify-content:center; gap:8px; }
+.i-steps i{ width:7px; height:7px; border-radius:50%; background:rgba(18,41,58,.18); }
+.i-steps i.on{ background:var(--cyan); box-shadow:0 0 8px rgba(8,145,178,.6); }
+
+@media (max-width:700px){
+  body{ display:block; padding:0; }
+  .phone{ width:100%; height:100dvh; min-height:100dvh; padding:0; border-radius:0; background:transparent; box-shadow:none; }
+  .screen,.intro{ border-radius:0; }
+}
+@media (prefers-reduced-motion: reduce){ *,*::before,*::after{ animation:none !important; transition:none !important; } }
+</style>
+</head>
+<body>
+
+<a href="../index.html" aria-label="返回方案列表" style="position:fixed;top:12px;left:12px;z-index:99999;display:inline-flex;align-items:center;gap:4px;min-height:36px;padding:0 14px;border-radius:99px;font:600 13px/1 -apple-system,'PingFang SC',sans-serif;color:#0f9488;text-decoration:none;background:rgba(255,255,255,.86);border:1px solid rgba(28,46,70,.14);box-shadow:0 4px 14px rgba(28,46,70,.16);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)">‹ 首页</a>
+
+<div class="phone"><div class="screen">
+  <div class="island"></div>
+
+  <!-- ============ 揭幕片「倒放」 ============ -->
+  <div class="intro" id="intro">
+    <button class="intro-skip" id="skipBtn" type="button">跳过</button>
+    <div class="iscene on" id="is1">
+      <div class="inner">
+        <p class="i-name">许家佑</p>
+        <p class="i-sub">男 · 45 岁<br>2024 – 2026 ｜ 9 项指标 · 3 年轨迹</p>
+      </div>
+    </div>
+    <div class="iscene" id="is2">
+      <div class="inner rewind">
+        <div class="rw-badge">时间倒放中</div>
+        <div class="rw-year" id="rwYear">2026</div>
+        <div class="rw-rows">
+          <div class="rw-row"><span>空腹血糖</span><b id="rwGlu">7.2</b></div>
+          <div class="rw-row"><span>体重 kg</span><b id="rwWt">85.0</b></div>
+          <div class="rw-row"><span>PSA</span><b id="rwPsa">3.8</b></div>
+        </div>
+        <div class="rw-axis">
+          <i style="left:0%"></i><i style="left:50%"></i><i style="left:100%"></i>
+          <div class="rw-cursor" id="rwCursor" style="left:100%"></div>
+        </div>
+        <p class="rw-cap" id="rwCap">正在倒放你的三年 …</p>
+      </div>
+    </div>
+    <div class="iscene" id="is3">
+      <div class="inner">
+        <p class="i-line">虽然回不到<br>3 年前，</p>
+        <p class="i-line" style="margin-top:18px"><em>但可以从今天开始，<br>管理未来的身体状态。</em></p>
+        <p class="i-sub" style="margin-top:16px">推演模型 · 三甲医院联合顾问团审定</p>
+        <button class="i-enter" id="enterBtn" type="button">查看详情</button>
+      </div>
+    </div>
+    <div class="i-steps" id="isteps"><i class="on"></i><i></i><i></i></div>
+  </div>
+
+  <!-- ============ App ============ -->
+  <div class="statusbar"><span>9:41</span><span style="font-size:11.5px;color:var(--txt2)">5G ▮▮▮▯ ▐▐</span></div>
+
+  <div class="app-body" id="appBody">
+
+    <!-- 幕一 · 现状盘 -->
+    <section class="page on" id="pg-now">
+      <div class="app-head">
+        <div class="t">现状盘<small>SANDBOX · 由你的 3 年数据校准</small></div>
+        <button class="chip cyan" id="replayBtn" type="button" style="align-self:center;min-height:44px;padding:0 14px">▶ 重看开场</button>
+      </div>
+
+      <div class="cert">
+        <svg viewBox="0 0 24 24"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5z"/><path d="M9 12l2 2 4-4"/></svg>
+        <div class="c-t">推演模型 · 三甲医院联合顾问团审定<small>系数依据 ADA / EASL / ACSM 临床指南 ｜ 审定号 ZSD-M2026-07</small></div>
+        <span class="chip cyan">已审定</span>
+      </div>
+
+      <div class="card">
+        <div class="card-title">健康分 · 总体位置<span class="chip-r chip grey">非确诊</span></div>
+        <div class="sc-row">
+          <div class="sc-big"><b>66</b><span>2026 · 中风险</span></div>
+          <div class="sc-trend">
+            <div class="sct"><em>78</em><i style="--h:36px;--c:var(--green)"></i><span>2024</span></div>
+            <div class="sct"><em>72</em><i style="--h:29px;--c:var(--amber)"></i><span>2025</span></div>
+            <div class="sct"><em>66</em><i style="--h:22px;--c:var(--red)"></i><span>2026</span></div>
+          </div>
+        </div>
+        <div class="dist-track now-dist"><div class="dist-marker" id="nowDist" data-t="你在这里" style="left:60%"></div></div>
+        <div class="dist-scale"><span>健康</span><span>临界</span><span>疾病</span></div>
+        <p style="font-size:11.5px;color:var(--txt2);line-height:1.7;margin-top:10px">三年掉了 12 分，仍在向风险侧移动。下面每块仪表都可以<b style="color:var(--cyan)">点开看解读</b>，也都是推演台上能被你亲手改变的量。</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">身体仪表 · 2026 实测<span class="chip-r chip red">3 项越线</span></div>
+        <div class="gauge-grid">
+          <button class="gauge" data-ind="glu" type="button"><span class="chip red g-tag">越线</span>
+            <div class="g-name">空腹血糖</div><div class="g-val" style="color:var(--red)">7.2<small>mmol/L</small></div>
+            <div class="g-trend"><span><em>5.4</em><i style="--h:15px;--c:var(--teal)"></i><span class="gy">24</span></span><span><em>6.1</em><i style="--h:21px;--c:var(--amber)"></i><span class="gy">25</span></span><span><em>7.2</em><i style="--h:28px;--c:var(--red)"></i><span class="gy">26</span></span></div>
+            <div class="g-ref">参考 3.9–6.1<span class="g-open">点击看解读</span></div></button>
+          <button class="gauge" data-ind="psa" type="button"><span class="chip red g-tag">升速异常</span>
+            <div class="g-name">PSA</div><div class="g-val" style="color:var(--red)">3.8<small>ng/mL</small></div>
+            <div class="g-trend"><span><em>1.2</em><i style="--h:10px;--c:var(--teal)"></i><span class="gy">24</span></span><span><em>2.2</em><i style="--h:17px;--c:var(--amber)"></i><span class="gy">25</span></span><span><em>3.8</em><i style="--h:28px;--c:var(--red)"></i><span class="gy">26</span></span></div>
+            <div class="g-ref">参考 &lt; 4.0<span class="g-open">点击看解读</span></div></button>
+          <button class="gauge" data-ind="uacr" type="button"><span class="chip red g-tag">重度</span>
+            <div class="g-name">尿蛋白 UACR</div><div class="g-val" style="color:var(--red)">280<small>mg/g</small></div>
+            <div class="g-trend"><span><em>—</em><i style="--h:3px;--c:rgba(18,41,58,.15)"></i><span class="gy">24</span></span><span><em>—</em><i style="--h:3px;--c:rgba(18,41,58,.15)"></i><span class="gy">25</span></span><span><em>280</em><i style="--h:28px;--c:var(--red)"></i><span class="gy">26</span></span></div>
+            <div class="g-ref">参考 &lt; 30 · 单次首检<span class="g-open">点击看解读</span></div></button>
+          <button class="gauge" data-ind="chol" type="button"><span class="chip amber g-tag">偏高</span>
+            <div class="g-name">总胆固醇</div><div class="g-val" style="color:var(--amber)">5.8<small>mmol/L</small></div>
+            <div class="g-trend"><span><em>4.9</em><i style="--h:18px;--c:var(--teal)"></i><span class="gy">24</span></span><span><em>5.4</em><i style="--h:23px;--c:var(--amber)"></i><span class="gy">25</span></span><span><em>5.8</em><i style="--h:28px;--c:var(--amber)"></i><span class="gy">26</span></span></div>
+            <div class="g-ref">参考 &lt; 5.2<span class="g-open">点击看解读</span></div></button>
+          <button class="gauge" data-ind="bp" type="button"><span class="chip amber g-tag">偏高</span>
+            <div class="g-name">收缩压</div><div class="g-val" style="color:var(--amber)">145<small>mmHg</small></div>
+            <div class="g-trend"><span><em>125</em><i style="--h:18px;--c:var(--teal)"></i><span class="gy">24</span></span><span><em>135</em><i style="--h:23px;--c:var(--amber)"></i><span class="gy">25</span></span><span><em>145</em><i style="--h:28px;--c:var(--amber)"></i><span class="gy">26</span></span></div>
+            <div class="g-ref">参考 &lt; 130<span class="g-open">点击看解读</span></div></button>
+          <button class="gauge" data-ind="bmi" type="button"><span class="chip amber g-tag">超重</span>
+            <div class="g-name">BMI</div><div class="g-val" style="color:var(--amber)">26.8<small>kg/m²</small></div>
+            <div class="g-trend"><span><em>24.5</em><i style="--h:19px;--c:var(--teal)"></i><span class="gy">24</span></span><span><em>25.9</em><i style="--h:24px;--c:var(--amber)"></i><span class="gy">25</span></span><span><em>26.8</em><i style="--h:28px;--c:var(--amber)"></i><span class="gy">26</span></span></div>
+            <div class="g-ref">85kg / 178cm<span class="g-open">点击看解读</span></div></button>
+        </div>
+        <div class="hint">尿酸 480 · ALT 56 · 甲状腺 3 类 → 观察位，<b>已并入模型</b></div>
+      </div>
+      <p class="legal">所有数值为演示估算 · 非医学预测 · 不构成诊疗建议</p>
+    </section>
+
+    <!-- 幕二 · 推演台 -->
+    <section class="page" id="pg-sim">
+      <div class="app-head">
+        <div class="t">推演台<small>拖动变量 · 亲眼看因果</small></div>
+        <div class="chip cyan" style="align-self:center">12 个月后</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">推演结果 · 当前方案<span class="chip-r chip grey">12 个月后</span></div>
+        <div class="score-fore">
+          <span>健康分</span>
+          <div class="p-line"><em>66</em><i>→</i><b id="fsPred" style="color:var(--green)">83</b></div>
+        </div>
+        <p class="sim-say" id="simSay">这是「当前方案」的未来。调整底部变量，结果会实时变化。</p>
+        <div class="pred-grid">
+          <div class="pred"><span class="lens">代谢</span>
+            <div class="p-line"><em>7.2</em><i>→</i><b id="pGlu" style="color:var(--amber)">6.7</b></div>
+            <span>空腹血糖</span><span class="conf">可信度 <b>82%</b> · ADA 2026，已按上期偏差校准</span></div>
+          <div class="pred"><span class="lens">心血管</span>
+            <div class="p-line"><em>5.8</em><i>→</i><b id="pChol" style="color:var(--amber)">5.5</b></div>
+            <span>总胆固醇</span><span class="conf">可信度 <b>91%</b> · 上期预测命中，权重上调</span></div>
+          <div class="pred"><span class="lens">心血管</span>
+            <div class="p-line"><em>145</em><i>→</i><b id="pBp" style="color:var(--amber)">137</b></div>
+            <span>收缩压</span><span class="conf">可信度 <b>86%</b> · 中国血脂/血压指南</span></div>
+          <div class="pred"><span class="lens">肾·泌尿</span>
+            <div class="p-line"><em>26%</em><i>→</i><b id="pRisk" style="color:var(--green)">11%</b></div>
+            <span>3 年代谢病进展风险</span><span class="conf">可信度 <b>78%</b> · KDIGO / AUA 分层</span></div>
+        </div>
+      </div>
+      <p class="legal">推演为演示估算（线性简化模型）· 非医学预测 · 不构成诊疗建议</p>
+    </section>
+
+    <!-- 幕三 · 计划 -->
+    <section class="page" id="pg-go">
+      <div class="app-head">
+        <div class="t">计划<small>把推演变成 90 天行动</small></div>
+        <div class="chip green" style="align-self:center">可逆窗口期</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">你选择的计划<span class="chip-r chip cyan" id="goSummaryChip">来自推演台</span></div>
+        <p style="font-size:13px;line-height:1.9;color:var(--txt2)" id="goSummary">当前方案：体重 <b style="color:var(--cyan)">-0kg</b> · 每周运动 <b style="color:var(--cyan)">60 分钟</b> · 饮酒 <b style="color:var(--cyan)">6 杯/周</b> · 复查 <b style="color:var(--cyan)">做</b>。预计 12 个月后健康分 <b style="color:var(--cyan)">66</b>。</p>
+      </div>
+
+      <div class="card" style="padding-bottom:8px">
+        <div class="card-title">前 90 天 · 三步落地</div>
+        <div class="plan-item"><span class="n">1</span><p><b>第 1–14 天 · 复查三件套</b>泌尿外科 PSA/fPSA；晨尿 UACR + 肌酐/eGFR；HbA1c（可同次抽血）——先把两项红档变成"确认或排除"。</p></div>
+        <div class="plan-item"><span class="n">2</span><p><b>第 15–60 天 · 建立下限</b>按你推演的运动量执行，晚餐减精制主食；每周固定时间称重记录进沙盘。</p></div>
+        <div class="plan-item"><span class="n">3</span><p><b>第 61–90 天 · 中期校验</b>复测体重腰围与家庭血压 7 天，沙盘对照预测曲线看偏差。</p></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">承诺存档 · 下期对过账</div>
+        <p style="font-size:11.5px;color:var(--txt2);line-height:1.75;margin-bottom:12px">90天后体检来检验你的身体健康指数</p>
+        <button class="commit-btn" id="commitBtn" type="button">存档我的推演计划</button>
+      </div>
+      <p class="legal">本原型为演示版本 · 案例数据为虚构 · 不构成诊疗建议</p>
+    </section>
+  </div>
+
+  <!-- 指标解读面板 -->
+  <div class="bsheet" id="bsheet">
+    <div class="bs-card">
+      <div class="bs-head"><b id="biName">—</b><span class="chip cyan" id="biDept">—</span><button class="bs-close" id="biClose" type="button">✕</button></div>
+      <div class="bs-body" id="biBody"></div>
+    </div>
+  </div>
+
+  <div class="sim-dock" id="simDock" aria-label="推演变量控制台">
+    <div class="dock-presets">
+      <button class="preset" data-preset="light" type="button">轻量</button>
+      <button class="preset on" data-preset="rec" type="button">推荐</button>
+      <button class="preset" data-preset="strong" type="button">强化</button>
+    </div>
+    <div class="var-pills">
+      <button class="var-pill" data-edit="wt" type="button"><span>体重</span><b id="vWt">-6.0 kg</b></button>
+      <button class="var-pill" data-edit="ex" type="button"><span>运动</span><b id="vEx">150 分钟</b></button>
+      <button class="var-pill" data-edit="alc" type="button"><span>饮酒</span><b id="vAlc">2 杯</b></button>
+      <button class="var-pill switch on" id="tglScreen" type="button"><span>复查</span><b id="vScreen">已安排</b></button>
+    </div>
+    <div class="dock-editor" id="dockEditor">
+      <div class="edit-head"><b id="editName">体重变化</b><button id="editClose" type="button">×</button></div>
+      <div class="edit-panel" data-edit-panel="wt">
+        <div class="sim-zone" data-sim="wt"><div class="sim-track"></div><div class="sim-fill"></div><div class="sim-handle"></div></div>
+        <div class="sim-note"><span>-8kg</span><span>不变</span><span>+4kg</span></div>
+      </div>
+      <div class="edit-panel" data-edit-panel="ex">
+        <div class="sim-zone" data-sim="ex"><div class="sim-track"></div><div class="sim-fill"></div><div class="sim-handle"></div></div>
+        <div class="sim-note"><span>0</span><span>150（指南线）</span><span>300</span></div>
+      </div>
+      <div class="edit-panel" data-edit-panel="alc">
+        <div class="sim-zone" data-sim="alc"><div class="sim-track"></div><div class="sim-fill"></div><div class="sim-handle"></div></div>
+        <div class="sim-note"><span>0</span><span>7</span><span>14</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabbar">
+    <button class="tab on" data-pg="pg-now" type="button"><b>Ⅰ</b>现状盘点</button>
+    <button class="tab" data-pg="pg-sim" type="button"><b>Ⅱ</b>健康推演</button>
+    <button class="tab" data-pg="pg-go" type="button"><b>Ⅲ</b>推演计划</button>
+  </div>
+  <div class="home-bar"></div>
+</div></div>
+
+<script>
+/* ===== Tab ===== */
+const appBody = document.getElementById("appBody");
+const screenEl = document.querySelector(".screen");
+function showPg(id){
+  document.querySelectorAll(".page").forEach(p => p.classList.toggle("on", p.id === id));
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.pg === id));
+  screenEl.classList.toggle("sim-active", id === "pg-sim");
+  if(id !== "pg-sim") document.getElementById("simDock").classList.remove("editing");
+  appBody.scrollTop = 0;
+  if(id === "pg-go") syncGo();
+}
+document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => showPg(t.dataset.pg)));
+
+/* ===== 推演模型（演示用线性估算） ===== */
+const S = { wt:-6, ex:150, alc:2, screen:true };   /* wt: -8~+4, ex: 0~300, alc: 0~14 */
+const cfg = {
+  wt:{ min:-8, max:4, fmt:v => (v>0?"+":"") + v.toFixed(1) + " kg" },
+  ex:{ min:0, max:300, fmt:v => Math.round(v) + " 分钟" },
+  alc:{ min:0, max:14, fmt:v => Math.round(v) + " 杯" }
+};
+function calc(){
+  /* 12 个月预测：基线漂移 + 干预效应（线性简化，演示用） */
+  const glu  = 7.2 + 0.25 + S.wt*0.09  - (S.ex-60)/300*0.5 + (S.alc-6)*0.02;
+  const chol = 5.8 + 0.15 + S.wt*0.05  - (S.ex-60)/300*0.35 + (S.alc-6)*0.015;
+  const bp   = 145 + 3    + S.wt*1.1   - (S.ex-60)/300*7    + (S.alc-6)*0.5;
+  let risk = 26 + S.wt*1.6 - (S.ex-60)/300*7 + (S.alc-6)*0.9 + (S.screen ? 0 : 6);
+  risk = Math.max(6, Math.min(42, risk));
+  const score = Math.round(Math.max(40, Math.min(88, 66 - (risk-26)*1.1)));
+  return { glu, chol, bp, risk, score };
+}
+function paint(){
+  const r = calc();
+  const set = (id, v, warnAt, redAt) => {
+    const el = document.getElementById(id);
+    el.textContent = v;
+    const n = parseFloat(v);
+    el.style.color = n >= redAt ? "var(--red)" : n >= warnAt ? "var(--amber)" : "var(--green)";
+  };
+  set("pGlu",  r.glu.toFixed(1), 6.1, 7.0);
+  set("pChol", r.chol.toFixed(1), 5.2, 6.2);
+  set("pBp",   Math.round(r.bp), 130, 150);
+  const pr = document.getElementById("pRisk");
+  pr.textContent = Math.round(r.risk) + "%";
+  pr.style.color = r.risk >= 24 ? "var(--red)" : r.risk >= 15 ? "var(--amber)" : "var(--green)";
+  const fs = document.getElementById("fsPred");
+  fs.textContent = r.score;
+  fs.style.color = r.score >= 72 ? "var(--green)" : r.score >= 62 ? "var(--amber)" : "var(--red)";
+  /* 实时解说：这一下拖动意味着什么 */
+  const dg = r.glu - 7.2, say = document.getElementById("simSay");
+  if(S.wt === 0 && S.ex === 60 && S.alc === 6 && S.screen){
+    say.textContent = "这是「维持现状」的未来：血糖继续爬到 " + r.glu.toFixed(1) + "、健康分再掉 " + (66 - r.score) + " 分。拖动底部变量，改写它。";
+  }else if(dg <= -0.25){
+    say.textContent = "方向对了：这套改变让血糖预计回落 " + Math.abs(dg).toFixed(1) + "（约回到 " + (r.glu <= 6.3 ? "2025 年之前" : "2025 年") + " 的水平），健康分 " + (r.score >= 66 ? "+" : "") + (r.score - 66) + "。减重的贡献最大。";
+  }else if(r.score > 66){
+    say.textContent = "有效果，但血糖还没掉头——把【体重】变量再往左拉一点，它是这条链的根。";
+  }else{
+    say.textContent = "这个组合比现状更糟（健康分 " + (r.score - 66) + "）：看看是不是饮酒加了、运动减了。";
+  }
+}
+function syncSlider(key){
+  const c = cfg[key], zone = document.querySelector(`[data-sim="${key}"]`);
+  if(!zone) return;
+  const t = (S[key]-c.min)/(c.max-c.min), pct = t*100;
+  zone.querySelector(".sim-fill").style.width = pct+"%";
+  zone.querySelector(".sim-handle").style.left = pct+"%";
+  document.getElementById("v"+key[0].toUpperCase()+key.slice(1)).textContent = c.fmt(S[key]);
+}
+function syncScreenPill(){
+  const pill = document.getElementById("tglScreen");
+  pill.classList.toggle("on", S.screen);
+  document.getElementById("vScreen").textContent = S.screen ? "已安排" : "未安排";
+}
+function markPreset(name){
+  document.querySelectorAll("[data-preset]").forEach(b => b.classList.toggle("on", b.dataset.preset === name));
+}
+function applyPreset(name){
+  const presets = {
+    light:{ wt:-3, ex:120, alc:3, screen:true },
+    rec:{ wt:-6, ex:150, alc:2, screen:true },
+    strong:{ wt:-8, ex:240, alc:0, screen:true }
+  };
+  Object.assign(S, presets[name]);
+  ["wt","ex","alc"].forEach(syncSlider);
+  syncScreenPill();
+  markPreset(name);
+  paint();
+}
+document.querySelectorAll(".sim-zone").forEach(zone => {
+  const key = zone.dataset.sim, c = cfg[key];
+  const evt = e => {
+    const r = zone.getBoundingClientRect();
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const t = Math.max(0, Math.min(1, (cx-r.left)/r.width));
+    S[key] = c.min + t*(c.max-c.min);
+    markPreset("");
+    syncSlider(key); paint();
+  };
+  let drag = false;
+  zone.addEventListener("pointerdown", e => { drag = true; zone.setPointerCapture(e.pointerId); evt(e); });
+  zone.addEventListener("pointermove", e => drag && evt(e));
+  zone.addEventListener("pointerup", () => drag = false);
+});
+document.getElementById("tglScreen").addEventListener("click", e => {
+  S.screen = !S.screen; markPreset(""); syncScreenPill(); paint();
+});
+const EDIT_LABELS = { wt:"体重变化", ex:"每周运动", alc:"每周饮酒" };
+document.querySelectorAll("[data-edit]").forEach(btn => btn.addEventListener("click", () => {
+  const key = btn.dataset.edit;
+  document.getElementById("simDock").classList.add("editing");
+  document.getElementById("editName").textContent = EDIT_LABELS[key];
+  document.querySelectorAll("[data-edit]").forEach(b => b.classList.toggle("active", b.dataset.edit === key));
+  document.querySelectorAll("[data-edit-panel]").forEach(p => p.classList.toggle("on", p.dataset.editPanel === key));
+}));
+document.getElementById("editClose").addEventListener("click", () => {
+  document.getElementById("simDock").classList.remove("editing");
+  document.querySelectorAll("[data-edit]").forEach(b => b.classList.remove("active"));
+});
+document.querySelectorAll("[data-preset]").forEach(btn => btn.addEventListener("click", () => applyPreset(btn.dataset.preset)));
+["wt","ex","alc"].forEach(syncSlider); syncScreenPill(); paint();
+
+/* 计划页同步 */
+function syncGo(){
+  const r = calc();
+  document.getElementById("goSummary").innerHTML =
+    `当前方案：体重 <b style="color:var(--cyan)">${cfg.wt.fmt(S.wt)}</b> · 每周运动 <b style="color:var(--cyan)">${cfg.ex.fmt(S.ex)}</b> · 饮酒 <b style="color:var(--cyan)">${cfg.alc.fmt(S.alc)}/周</b> · 复查 <b style="color:var(--cyan)">${S.screen?"做":"不做"}</b>。预计 12 个月后健康分 <b style="color:var(--cyan)">${r.score}</b>。`;
+}
+document.getElementById("commitBtn").addEventListener("click", e => {
+  try{ localStorage.setItem("b1commit", JSON.stringify(S)); }catch(err){}
+  e.currentTarget.textContent = "✓ 已存档 · 下期体检后自动对账";
+  e.currentTarget.classList.add("done");
+});
+
+/* ===== 指标解读面板（多学科视角） ===== */
+const INDS = {
+  glu:{ name:"空腹血糖", dept:"内分泌与代谢科", vals:"5.4 → 6.1 → 7.2", ref:"参考 3.9 – 6.1 mmol/L",
+    experts:[["内分泌与代谢科","三年连升且已达需确认区间，与体重同步——胰岛素抵抗可能性大，先 HbA1c 定档。"],["营养与健康管理","BMI 是带动血糖的主因；减重 5%–10%，血糖大概率跟着回落，当前仍可干预。"]],
+    summary:"需确认 + 可逆：1–2 周 HbA1c 确认档位，同步启动减重——确认不等于等待，两条并行。",
+    act:"1–2 周内 HbA1c 复查 · 今天启动 90 天减重",
+    sim:"去推演台拖【体重】滑块，看它 12 个月后的变化 →" },
+  psa:{ name:"PSA", dept:"泌尿外科", vals:"1.2 → 2.2 → 3.8", ref:"参考 < 4.0 ng/mL",
+    experts:[["泌尿外科","数值未超标，但三年增长 3 倍、升速异常——可能是炎症、增生，也可能是更严重问题的早期信号，应尽快专科复核。"]],
+    summary:"全身最优先排查项：生活方式滑块改变不了它，复查才是它的解法。",
+    act:"1–2 周内泌尿外科复查 PSA / fPSA（前 48 小时避免骑行）",
+    sim:"去推演台打开【复查】开关，把不确定变成答案 →" },
+  uacr:{ name:"尿蛋白 UACR", dept:"肾内科", vals:"— → — → 280（首次检出）", ref:"参考 < 30 mg/g",
+    experts:[["肾内科","280 属重度异常，叠加血糖血压上行，主张尽快专科评估。"],["全科视角","单次检出可能受剧烈运动、感染干扰，可先复查晨尿排除假阳性。"]],
+    summary:"两种意见已复核：1–2 周晨尿复查先行；若仍异常，立即转肾内科——兜底已设定。",
+    act:"1–2 周内晨尿复查 UACR + 肌酐 / eGFR",
+    sim:"去推演台打开【复查】开关，把不确定变成答案 →" },
+  chol:{ name:"总胆固醇", dept:"心内科", vals:"4.9 → 5.4 → 5.8", ref:"参考 < 5.2 mmol/L",
+    experts:[["心内科","与血压同向上行，动脉承受叠加负担；未达用药线，处于生活方式可逆区间。"],["内分泌与代谢科","与体重高度同步，属代谢链下游——减重是共同的根。"]],
+    summary:"3 个月窗口内让曲线掉头，否则长期心血管风险持续累积。",
+    act:"3 个月内复查血脂四项（重点 LDL-C）+ 7 天家庭血压",
+    sim:"去推演台看【体重+运动】对它的拉动 →" },
+  bp:{ name:"收缩压", dept:"心内科", vals:"125 → 135 → 145", ref:"参考 < 130 mmHg",
+    experts:[["心内科","三年 +20mmHg，与体重、油盐摄入相关；建议先建立家庭血压基线再定干预强度。"]],
+    summary:"未到用药判断线，但趋势必须止住——记录 7 天早晚血压是第一步。",
+    act:"连续 7 天早晚家庭血压取均值 · 控油盐",
+    sim:"去推演台看【运动】滑块对它的拉动 →" },
+  bmi:{ name:"BMI", dept:"内分泌与代谢科", vals:"24.5 → 25.9 → 26.8", ref:"参考 18.5 – 23.9",
+    experts:[["内分泌与代谢科","它就是代谢链的起点：血糖、血脂、血压的同步上行都与它相关。"],["营养与健康管理","减重 5%–10%（约 4–8kg）是全局回报最高的一件事。"]],
+    summary:"改变它 = 同时拉动血糖、血脂、血压——全场性价比最高的干预点。",
+    act:"90 天减重 4kg：晚餐减精制主食 + 每周 150 分钟有氧",
+    sim:"它就是推演台上那根【体重】滑块 →" }
+};
+const bsheet = document.getElementById("bsheet");
+function openInd(k){
+  const d = INDS[k];
+  document.getElementById("biName").textContent = d.name;
+  document.getElementById("biDept").textContent = d.dept;
+  document.getElementById("biBody").innerHTML =
+    `<div class="bi-vals">${d.vals}<span>2024 → 2025 → 2026 ｜ ${d.ref}</span></div>`
+    + `<div class="bi-sec">多学科解读</div>`
+    + d.experts.map(e => `<div class="bi-exp"><b>${e[0]}</b><p>${e[1]}</p></div>`).join("")
+    + `<div class="bi-sum">${d.summary}</div>`
+    + `<div class="bi-sec">下一步</div><div class="bi-act">⚡ ${d.act}</div>`
+    + `<button class="bi-cta" type="button">${d.sim}</button>`;
+  bsheet.classList.add("on");
+}
+document.querySelectorAll("[data-ind]").forEach(b => b.addEventListener("click", () => openInd(b.dataset.ind)));
+document.getElementById("biClose").addEventListener("click", () => bsheet.classList.remove("on"));
+document.getElementById("biBody").addEventListener("click", e => {
+  if(e.target.closest(".bi-cta")){ bsheet.classList.remove("on"); showPg("pg-sim"); }
+});
+
+/* ===== 揭幕片「倒放」 ===== */
+const intro = document.getElementById("intro");
+const steps = document.querySelectorAll("#isteps i");
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let timers = [], rewindIv = null;
+function scene(n){
+  [1,2,3].forEach(i => document.getElementById("is"+i).classList.toggle("on", i === n));
+  steps.forEach((d,i) => d.classList.toggle("on", i === n-1));
+  intro.classList.toggle("fin", n === 3);   /* 终幕隐藏跳过，等待点击 */
+}
+function playIntro(){
+  intro.classList.remove("hidden");
+  timers.forEach(clearTimeout); timers = []; clearInterval(rewindIv);
+  if(reduced){ scene(3); return; }
+  scene(1);
+  const T = (fn,ms) => timers.push(setTimeout(fn,ms));
+  T(() => { scene(2); startRewind(); }, 2600);
+  T(() => { clearInterval(rewindIv); scene(3); }, 8600);   /* 终幕停留，不自动跳转 */
+}
+function startRewind(){
+  let t = 0;                                   /* 0 → 1 表示 2026 → 2024 */
+  const yr = document.getElementById("rwYear");
+  const glu = document.getElementById("rwGlu"), wt = document.getElementById("rwWt"), psa = document.getElementById("rwPsa");
+  const cursor = document.getElementById("rwCursor"), cap = document.getElementById("rwCap");
+  const bs = document.querySelectorAll("#is2 .rw-row b");
+  const stamp = () => {
+    yr.textContent = Math.round(2026 - t*2);
+    glu.textContent = (7.2 - t*1.8).toFixed(1);
+    wt.textContent  = (85 - t*4).toFixed(1);
+    psa.textContent = (3.8 - t*2.6).toFixed(1);
+    cursor.style.left = (100 - t*100) + "%";           /* 游标从 2026 端倒行到 2024 端 */
+    const col = t < .34 ? "var(--red)" : t < .67 ? "var(--amber)" : "var(--green)";  /* 越往过去越健康 */
+    bs.forEach(b => b.style.color = col);
+    cap.textContent = t >= 1 ? "三年前，一切还来得及。" : "◀ 回到 " + Math.round(2026 - t*2) + " …";
+  };
+  stamp();
+  rewindIv = setInterval(() => {
+    t = Math.min(1, t + 0.02);
+    stamp();
+    if(t >= 1) clearInterval(rewindIv);
+  }, 90);
+}
+function endIntro(){
+  timers.forEach(clearTimeout); timers = []; clearInterval(rewindIv);
+  intro.classList.add("hidden");
+  try{ localStorage.setItem("b1introSeen","1"); }catch(e){}
+}
+document.getElementById("skipBtn").addEventListener("click", endIntro);
+document.getElementById("enterBtn").addEventListener("click", endIntro);
+document.getElementById("replayBtn").addEventListener("click", playIntro);
+const forceIntro = (() => {
+  try{
+    const force = new URLSearchParams(location.search).get("intro") === "1";
+    if(force) history.replaceState(null, "", location.pathname + location.hash);
+    return force;
+  }catch(e){ return false; }
+})();
+let seen = false;
+try{ seen = localStorage.getItem("b1introSeen") === "1"; }catch(e){}
+forceIntro || !seen ? playIntro() : intro.classList.add("hidden");
+</script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="icon" href="data:,">
+<title>多年报告联合解读 · 方案预览</title>
+<style>
+*{ margin:0; padding:0; box-sizing:border-box; -webkit-font-smoothing:antialiased; }
+:root{
+  --teal:#0f9488; --txt:#142033; --txt2:rgba(20,32,51,.62); --txt3:rgba(20,32,51,.42);
+  --line:rgba(28,46,70,.12); --glass:rgba(255,255,255,.72);
+  --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif;
+}
+body{ min-height:100dvh; color:var(--txt); font-family:var(--sans); padding:calc(env(safe-area-inset-top) + 40px) 20px 48px;
+  background:
+    radial-gradient(900px 480px at 12% 0%, rgba(15,148,136,.14), transparent 58%),
+    radial-gradient(860px 500px at 88% 8%, rgba(184,148,31,.12), transparent 60%),
+    linear-gradient(180deg,#f7fafc,#e6edf5); }
+.wrap{ max-width:520px; margin:0 auto; }
+.head{ text-align:center; margin-bottom:34px; }
+.head h1{ font-size:26px; font-weight:800; letter-spacing:1px; }
+.head p{ margin-top:12px; font-size:13px; color:var(--txt2); line-height:1.7; letter-spacing:.5px; }
+.head .meta{ margin-top:14px; display:inline-flex; gap:8px; flex-wrap:wrap; justify-content:center; }
+.head .meta span{ font-size:11px; color:var(--teal); background:rgba(15,148,136,.12); padding:5px 11px; border-radius:99px; font-weight:600; }
+.cards{ display:grid; gap:16px; }
+.card{ display:block; text-decoration:none; color:inherit; position:relative; overflow:hidden;
+  background:var(--glass); border:1px solid var(--line); border-radius:22px; padding:20px 20px 18px;
+  backdrop-filter:blur(24px); box-shadow:inset 0 1px 0 rgba(255,255,255,.72), 0 14px 30px rgba(28,46,70,.08);
+  transition:transform .15s ease; }
+.card:active{ transform:scale(.985); }
+.card .tag{ font-size:11px; font-weight:800; letter-spacing:3px; color:var(--teal); }
+.card h2{ font-size:20px; font-weight:800; margin:8px 0 8px; letter-spacing:.5px; }
+.card p{ font-size:13px; color:var(--txt2); line-height:1.75; }
+.card .go{ margin-top:14px; display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:700; color:var(--teal); }
+.card .go svg{ width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+.card .bar{ position:absolute; left:0; top:0; bottom:0; width:5px; }
+.card.a .bar{ background:linear-gradient(180deg,#b8941f,#c23a2b); }
+.card.b .bar{ background:linear-gradient(180deg,#0f9488,#0e7490); }
+.card.c .bar{ background:linear-gradient(180deg,#5b70bc,#7c3aed); }
+.note{ margin-top:26px; font-size:11px; color:var(--txt3); line-height:1.7; text-align:center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <h1>多年报告联合解读</h1>
+    <p>基于多年 × 多学科体检数据的健康报告解读 Demo<br>三个方向 · 可交互原型 · 建议在手机或窄窗口浏览</p>
+    <div class="meta"><span>案例：许家佑 2024–2026</span><span>演示版 · 数据虚构</span></div>
+  </div>
+
+  <div class="cards">
+    <a class="card a" href="./a/index.html?intro=1">
+      <span class="bar"></span>
+      <div class="tag">方案 A</div>
+      <h2>AI健康官</h2>
+      <p>私人健康官综合分析，以报告形态给出结论、和行动计划。</p>
+      <span class="go">进入预览 <svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span>
+    </a>
+
+    <a class="card b" href="./b/index.html?intro=1">
+      <span class="bar"></span>
+      <div class="tag">方案 B</div>
+      <h2>健康沙盘</h2>
+      <p>把身体状况做成可推演的沙盘，直观看到各项指标之间的关系与走向。</p>
+      <span class="go">进入预览 <svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span>
+    </a>
+
+    <a class="card c" href="./c/index.html?intro=1">
+      <span class="bar"></span>
+      <div class="tag">方案 C</div>
+      <h2>身体地图</h2>
+      <p>以可交互的 3D 身体模型为入口，按部位定位问题与解读。<br><small style="color:var(--txt3)">含 3D 模型，首次打开需加载十余秒，建议 Wi-Fi 环境。</small></p>
+      <span class="go">进入预览 <svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span>
+    </a>
+  </div>
+
+  <p class="note">本预览用于内部方案评审 · 不构成医疗诊断与治疗建议 · 结论以执业医师面诊为准</p>
+</div>
+</body>
+</html>

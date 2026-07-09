@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="icon" href="data:,">
+<title>多年报告联合解读（方案A · 可交互原型）</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-font-smoothing:antialiased; }
+:root{
+  --ink:#f3f7fb;
+  --glass:rgba(255,255,255,.72);
+  --line:rgba(28,46,70,.13);
+  --txt:#142033;
+  --txt2:rgba(20,32,51,.66);
+  --txt3:rgba(20,32,51,.42);
+  --teal:#0f9488;
+  --teal-dim:rgba(15,148,136,.13);
+  --amber:#b7791f;
+  --amber-dim:rgba(183,121,31,.13);
+  --red:#d24a43;
+  --red-dim:rgba(210,74,67,.12);
+  --green:#239b62;
+  --gold:#b8941f;
+  --paper:#f6f0e1;
+  --paper2:#efe6cf;
+  --paper-ink:#2c2416;
+  --paper-ink2:rgba(44,36,22,.62);
+  --seal:#c23a2b;
+  --serif:"Songti SC","STSong","Noto Serif SC",serif;
+  --kai:"Kaiti SC","STKaiti","KaiTi",cursive,serif;
+  --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif;
+}
+html,body{ height:100%; }
+body{
+  display:grid; place-items:center; padding:24px 12px; overflow:hidden;
+  background:
+    radial-gradient(900px 480px at 12% 0%, rgba(15,148,136,.12), transparent 58%),
+    radial-gradient(860px 500px at 88% 8%, rgba(184,148,31,.11), transparent 60%),
+    linear-gradient(180deg,#f7fafc,#e6edf5);
+  color:var(--txt); font-family:var(--sans);
+}
+button{ border:0; background:none; font:inherit; color:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+
+/* ===== iPhone 外壳 ===== */
+.phone{ width:min(390px,calc(100vw - 20px)); height:min(844px,calc(100dvh - 32px)); min-height:700px;
+  background:linear-gradient(145deg,#ffffff,#cbd6e2); border-radius:56px; padding:9px; position:relative; flex-shrink:0;
+  box-shadow:0 0 0 1px rgba(255,255,255,.9), 0 2px 8px rgba(28,46,70,.12), 0 30px 70px -28px rgba(28,46,70,.36); }
+.screen{ width:100%; height:100%; border-radius:47px; overflow:hidden; background:var(--ink); position:relative; display:flex; flex-direction:column; }
+.screen::before{ content:""; position:absolute; inset:-40%;
+  background:
+   radial-gradient(38% 28% at 22% 18%, rgba(15,148,136,.14), transparent 70%),
+   radial-gradient(42% 30% at 82% 8%, rgba(91,112,188,.1), transparent 70%),
+   radial-gradient(50% 36% at 70% 92%, rgba(184,148,31,.12), transparent 70%);
+  animation:aurora 16s ease-in-out infinite alternate; pointer-events:none; }
+@keyframes aurora{ from{ transform:rotate(0deg) scale(1);} to{ transform:rotate(6deg) scale(1.08);} }
+.island{ position:absolute; top:20px; left:50%; transform:translateX(-50%); width:118px; height:34px; background:#243043; border-radius:20px; z-index:60; }
+.statusbar{ height:60px; flex-shrink:0; display:flex; align-items:flex-end; justify-content:space-between; padding:0 32px 8px; font-size:14px; font-weight:600; position:relative; z-index:5; }
+.home-bar{ position:absolute; bottom:8px; left:50%; transform:translateX(-50%); width:134px; height:5px; border-radius:3px; background:rgba(20,32,51,.22); z-index:60; }
+
+/* ===== App 通用 ===== */
+.app-body{ flex:1; overflow-y:auto; overflow-x:hidden; padding:6px 18px 120px; position:relative; z-index:5; scroll-behavior:smooth; }
+.app-body::-webkit-scrollbar{ display:none; }
+.page{ display:none; animation:rise .25s ease both; }
+.page.on{ display:block; }
+@keyframes rise{ from{ opacity:0; transform:translateY(8px);} to{ opacity:1; transform:none;} }
+.app-head{ display:flex; align-items:center; justify-content:space-between; padding:8px 2px 14px; }
+.app-head .t{ font-size:22px; font-weight:800; letter-spacing:1px; }
+.app-head .t small{ display:block; font-size:11px; font-weight:400; color:var(--txt3); letter-spacing:2px; margin-top:3px; }
+.pill-btn{ display:flex; align-items:center; gap:6px; min-height:44px; padding:0 14px; border-radius:99px;
+  background:var(--glass); border:1px solid var(--line); backdrop-filter:blur(20px); color:var(--teal); font-size:12px; font-weight:600; }
+.card{ background:var(--glass); border:1px solid var(--line); border-radius:22px; backdrop-filter:blur(24px);
+  padding:16px; margin-bottom:14px; position:relative; box-shadow:inset 0 1px 0 rgba(255,255,255,.72), 0 12px 28px rgba(28,46,70,.07); }
+.card-title{ display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700; letter-spacing:2px; color:var(--txt2); margin-bottom:14px; }
+.card-title::before{ content:""; width:14px; height:2px; background:var(--teal); border-radius:2px; }
+.card-title .chip-r{ margin-left:auto; }
+.chip{ font-size:10px; font-weight:600; padding:3px 9px; border-radius:99px; letter-spacing:1px; }
+.chip.teal{ color:var(--teal); background:var(--teal-dim); }
+.chip.amber{ color:var(--amber); background:var(--amber-dim); }
+.chip.red{ color:var(--red); background:var(--red-dim); }
+.chip.green{ color:var(--green); background:rgba(52,211,153,.14); }
+.chip.grey{ color:var(--txt2); background:rgba(20,32,51,.06); }
+.hint{ font-size:10.5px; color:var(--txt3); text-align:center; margin-top:8px; letter-spacing:.5px; }
+.hint b{ color:var(--teal); font-weight:600; }
+
+/* ===== Tabbar ===== */
+.tabbar{ position:absolute; bottom:0; left:0; right:0; z-index:50; height:92px; padding:10px 10px 26px;
+  background:rgba(255,255,255,.78); backdrop-filter:blur(30px); border-top:1px solid rgba(28,46,70,.1); display:flex; align-items:center; }
+.tab{ flex:1; min-height:44px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+  color:var(--txt3); font-size:10.5px; letter-spacing:1px; position:relative; }
+.tab svg{ width:23px; height:23px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.tab.on{ color:var(--teal); font-weight:700; }
+.tab.on::after{ content:""; position:absolute; top:-10px; width:22px; height:3px; border-radius:2px; background:var(--teal); box-shadow:0 0 12px var(--teal); }
+
+/* ===== 署名条 ===== */
+.endorse{ display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:16px; margin-bottom:14px;
+  background:linear-gradient(90deg, rgba(184,148,31,.15), rgba(255,255,255,.66)); border:1px solid rgba(184,148,31,.28); backdrop-filter:blur(20px); }
+.endorse svg{ width:17px; height:17px; stroke:var(--gold); fill:none; stroke-width:1.8; flex-shrink:0; }
+.endorse .e-t{ flex:1; font-size:11.5px; color:var(--gold); font-weight:600; letter-spacing:1px; }
+.endorse .e-t small{ display:block; font-size:10px; color:rgba(160,130,40,.75); font-weight:400; margin-top:2px; letter-spacing:.5px; }
+.endorse .e-conf{ font-size:11px; color:var(--gold); font-weight:700; text-align:right; }
+.endorse .e-conf b{ font-size:15px; }
+
+/* ===== 纸质判决卡 ===== */
+.verdict-paper{ background:
+   radial-gradient(rgba(44,36,22,.045) 1px, transparent 1px),
+   linear-gradient(168deg, #f9f4e7 0%, var(--paper) 46%, var(--paper2) 100%);
+  background-size:7px 7px, 100% 100%;
+  border-radius:8px 22px 8px 22px; padding:22px 20px 18px; color:var(--paper-ink); position:relative; margin-bottom:14px;
+  box-shadow:0 1px 0 rgba(255,255,255,.65) inset, 0 16px 34px -18px rgba(115,84,14,.42), 0 3px 10px rgba(115,84,14,.14); }
+.verdict-paper::before{ content:""; position:absolute; inset:7px; border:1px solid rgba(44,36,22,.16); border-radius:4px 16px 4px 16px; pointer-events:none; }
+.vp-head{ display:flex; align-items:center; gap:12px; padding-bottom:12px; margin-bottom:14px; border-bottom:1px dashed rgba(44,36,22,.25); }
+.medal{ width:46px; height:46px; border-radius:50%; flex-shrink:0; position:relative; padding:2px;
+  background:conic-gradient(from 210deg, #b98f2e, #f3dd8e, #caa03c, #f7e6a6, #b98f2e);
+  box-shadow:0 2px 8px rgba(150,110,30,.45), inset 0 1px 2px rgba(255,255,255,.6); display:flex; align-items:center; justify-content:center; }
+.medal i{ width:100%; height:100%; border-radius:50%; background:radial-gradient(circle at 32% 28%, #ffffff, #dfe8f3);
+  display:flex; align-items:center; justify-content:center; font-style:normal; color:#7a5c10; font-family:var(--serif); font-weight:800; font-size:17px; }
+i.face{ background:#dfe8f3 url("data:image/jpeg;base64,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") center/cover no-repeat !important; }
+.vp-head .who{ flex:1; }
+.vp-head .who b{ font-family:var(--serif); font-size:15.5px; letter-spacing:1px; display:block; }
+.vp-head .who span{ font-size:10.5px; color:var(--paper-ink2); letter-spacing:2px; }
+.vp-doc-no{ font-size:9.5px; color:var(--paper-ink2); letter-spacing:1px; text-align:right; font-family:var(--serif); }
+.vp-text{ font-family:var(--serif); font-size:16px; line-height:2.05; font-weight:600; letter-spacing:.4px; }
+.vp-text .hl{ background:linear-gradient(transparent 62%, rgba(194,58,43,.22) 62%); padding:0 1px; }
+.vp-text .hl-t{ background:linear-gradient(transparent 62%, rgba(45,150,130,.25) 62%); padding:0 1px; }
+.vp-foot{ display:flex; align-items:flex-end; margin-top:16px; gap:10px; }
+.vp-sign{ flex:1; }
+.vp-sign .k{ font-family:var(--kai); font-size:15px; letter-spacing:2px; }
+.vp-sign .d{ font-family:var(--kai); font-size:13px; color:var(--paper-ink2); margin-top:4px; letter-spacing:3px; }
+.conf-ring{ width:58px; height:58px; border-radius:50%; flex-shrink:0; position:relative;
+  background:conic-gradient(#1f8f7c 0deg 320deg, rgba(44,36,22,.14) 320deg 360deg); animation:ringGlow 3.2s ease-in-out infinite; }
+.conf-ring::before{ content:""; position:absolute; inset:5px; border-radius:50%; background:var(--paper); }
+.conf-ring .v{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:2; }
+.conf-ring .v b{ font-size:14.5px; color:#1f8f7c; }
+.conf-ring .v span{ font-size:8px; color:var(--paper-ink2); letter-spacing:1px; transform:scale(.9); }
+@keyframes ringGlow{ 0%,100%{ filter:drop-shadow(0 0 0 rgba(31,143,124,0)); } 50%{ filter:drop-shadow(0 0 7px rgba(31,143,124,.5)); } }
+.seal{ width:66px; height:66px; border-radius:50%; border:3px solid var(--seal); flex-shrink:0; transform:rotate(-11deg);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; color:var(--seal); opacity:.86;
+  box-shadow:inset 0 0 0 1px rgba(194,58,43,.4); mix-blend-mode:multiply; }
+.seal .star{ font-size:13px; line-height:1; }
+.seal .s1{ font-size:8.5px; font-weight:700; letter-spacing:1px; font-family:var(--serif); }
+.seal .s2{ font-size:7.5px; letter-spacing:2px; font-family:var(--serif); }
+
+/* ===== 位置与方向（F2） ===== */
+.dist-track{ position:relative; height:14px; border-radius:9px; margin:24px 4px 8px;
+  background:linear-gradient(90deg, rgba(45,212,191,.75), rgba(251,191,36,.75) 55%, rgba(248,113,113,.8)); }
+.dist-marker{ position:absolute; left:60%; top:-9px; transform:translateX(-50%); width:4px; height:32px; border-radius:3px; background:var(--txt); box-shadow:0 0 0 3px rgba(255,255,255,.86); }
+.dist-marker::before{ content:"你在这里"; position:absolute; top:-24px; left:50%; transform:translateX(-50%); white-space:nowrap;
+  font-size:10.5px; font-weight:700; background:rgba(255,255,255,.86); padding:3px 9px; border-radius:99px; border:1px solid var(--line); }
+.dist-scale{ display:flex; justify-content:space-between; font-size:9px; color:var(--txt3); padding:0 4px; }
+.dist-desc{ font-size:11.5px; color:var(--txt2); line-height:1.7; margin-top:10px; }
+.dist-desc b{ color:var(--amber); }
+.score-inline{ display:flex; align-items:center; gap:14px; }
+.score-num{ font-size:34px; font-weight:800; color:var(--amber); font-variant-numeric:tabular-nums; }
+.score-num small{ font-size:11px; color:var(--txt3); font-weight:400; display:block; letter-spacing:1px; }
+
+/* ===== 风险一览 ===== */
+.risk-row{ display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:11px 2px; min-height:44px; }
+.risk-row + .risk-row{ border-top:1px solid rgba(28,46,70,.08); }
+.risk-dot{ width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+.risk-tx{ flex:1; }
+.risk-tx b{ display:block; font-size:13px; font-weight:600; line-height:1.45; }
+.risk-tx span{ font-size:10.5px; color:var(--txt3); }
+.risk-go{ color:var(--txt3); flex-shrink:0; display:flex; align-items:center; gap:6px; }
+.risk-go svg{ width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; }
+.blue-fold{ display:none; }
+.blue-open .blue-fold{ display:flex; }
+.fold-btn{ width:100%; display:flex; align-items:center; justify-content:center; gap:7px; min-height:40px; color:var(--txt3); font-size:11.5px; letter-spacing:1px; border-top:1px solid rgba(28,46,70,.08); }
+.fold-btn svg{ width:12px; height:12px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; transition:transform .2s; }
+.blue-open .fold-btn svg{ transform:rotate(180deg); }
+
+/* ===== 条带 ===== */
+.strip{ border-radius:16px; padding:13px 14px; margin-bottom:12px; display:flex; gap:11px; align-items:flex-start; backdrop-filter:blur(20px); }
+.strip.warn{ background:var(--amber-dim); border:1px solid rgba(251,191,36,.3); }
+.strip.act{ background:var(--teal-dim); border:1px solid rgba(45,212,191,.32); }
+.strip.good{ background:rgba(52,211,153,.1); border:1px solid rgba(52,211,153,.32); }
+.strip .s-tag{ font-size:10px; font-weight:800; letter-spacing:2px; padding:3px 7px; border-radius:6px; flex-shrink:0; margin-top:1px; }
+.strip.warn .s-tag{ color:var(--amber); background:rgba(251,191,36,.16); }
+.strip.act .s-tag{ color:var(--teal); background:rgba(45,212,191,.16); }
+.strip.good .s-tag{ color:var(--green); background:rgba(52,211,153,.16); }
+.strip p{ font-size:12.5px; line-height:1.75; }
+.strip p b{ font-weight:700; }
+.strip.warn p b{ color:var(--amber); } .strip.act p b{ color:var(--teal); } .strip.good p b{ color:var(--green); }
+
+/* ===== F1 复盘 ===== */
+.review-row{ display:flex; gap:11px; padding:12px 2px; }
+.review-row + .review-row{ border-top:1px solid rgba(28,46,70,.08); }
+.rv-mark{ width:26px; height:26px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; }
+.rv-mark.ok{ color:var(--green); background:rgba(52,211,153,.16); }
+.rv-mark.warn{ color:var(--amber); background:rgba(251,191,36,.18); }
+.review-row p{ font-size:12px; line-height:1.7; color:var(--txt2); }
+.review-row p b{ color:var(--txt); display:block; font-size:12.5px; margin-bottom:2px; }
+.review-row p .em-r{ color:var(--red); font-weight:700; }
+.review-row p .em-g{ color:var(--green); font-weight:700; }
+
+/* ===== 会诊团 ===== */
+.doc-row{ display:flex; gap:11px; padding:12px 2px; min-height:44px; }
+.doc-row + .doc-row{ border-top:1px solid rgba(28,46,70,.08); }
+.doc-ava{ width:36px; height:36px; border-radius:13px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; color:#fff; }
+.doc-info{ flex:1; }
+.doc-info .d-top{ display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+.doc-info .d-top b{ font-size:12.5px; letter-spacing:.5px; }
+.doc-info .d-top .chip{ margin-left:auto; }
+.doc-info p{ font-size:11.5px; line-height:1.65; color:var(--txt2); }
+.dispute-toggle{ display:flex; align-items:center; justify-content:center; gap:8px; min-height:44px; width:100%; border-radius:16px; margin-top:6px;
+  background:rgba(139,92,246,.1); border:1px dashed rgba(139,92,246,.45); color:#8b5cf6; font-size:12px; font-weight:600; letter-spacing:1px; }
+.dispute-toggle svg{ width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; transition:transform .25s; }
+.dispute-open .dispute-toggle svg{ transform:rotate(180deg); }
+.dispute-panel{ display:none; margin-top:10px; border-radius:18px; overflow:hidden; border:1px solid rgba(139,92,246,.35); background:rgba(139,92,246,.07); backdrop-filter:blur(18px); }
+.dispute-open .dispute-panel{ display:block; animation:rise .3s ease both; }
+.dispute-panel .dp-head{ padding:11px 14px; font-size:11px; font-weight:700; letter-spacing:2px; color:#8b5cf6; background:rgba(139,92,246,.12); }
+.dp-side{ padding:12px 14px; display:flex; gap:10px; }
+.dp-side + .dp-side{ border-top:1px solid rgba(139,92,246,.18); }
+.dp-side .tag{ flex-shrink:0; font-size:9.5px; font-weight:800; letter-spacing:1px; padding:3px 8px; border-radius:7px; height:fit-content; }
+.dp-side.a .tag{ color:#c026d3; background:rgba(240,171,252,.18); }
+.dp-side.b .tag{ color:#0369a1; background:rgba(125,211,252,.2); }
+.dp-side p{ font-size:11.5px; line-height:1.65; color:var(--txt2); }
+.dp-verdict{ padding:13px 14px; background:linear-gradient(90deg, rgba(231,197,106,.18), rgba(231,197,106,.06)); border-top:1px solid rgba(184,148,31,.3); display:flex; gap:10px; }
+.dp-verdict .mini-medal{ width:20px; height:20px; border-radius:50%; flex-shrink:0; margin-top:1px;
+  background:conic-gradient(from 210deg,#b98f2e,#f3dd8e,#caa03c,#f7e6a6,#b98f2e); display:flex; align-items:center; justify-content:center; }
+.dp-verdict .mini-medal i{ font-style:normal; font-size:9px; font-family:var(--serif); font-weight:800; color:#7a5c10; background:radial-gradient(circle at 32% 28%,#fff,#dfe8f3); width:16px; height:16px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+.dp-verdict p{ font-size:11.5px; line-height:1.7; }
+.dp-verdict p b{ color:var(--gold); }
+
+/* ===== 时间轴 ===== */
+.timeline{ position:relative; padding:76px 0 74px; }
+.tl-note.below{ top:auto; bottom:0; border-radius:3px 13px 13px 13px; }
+.tl-note.below::after{ bottom:auto; top:-7px; }
+.tl-track{ position:relative; height:58px; }
+.tl-line{ position:absolute; left:24px; right:24px; top:9px; height:2px; border-radius:2px;
+  background:linear-gradient(90deg, var(--teal) 0%, var(--amber) 50%, var(--red) 100%); opacity:.75; }
+.tl-years{ display:flex; justify-content:space-between; position:relative; padding:0 6px; }
+.tl-y{ display:flex; flex-direction:column; align-items:center; gap:7px; width:56px; }
+.tl-y i{ width:9px; height:9px; border-radius:50%; background:var(--teal); border:2px solid var(--ink); box-shadow:0 0 0 1.5px var(--teal); font-style:normal; margin-top:5px; }
+.tl-y.warn i{ box-shadow:0 0 0 1.5px var(--amber); background:var(--amber); width:12px; height:12px; margin-top:3px; }
+.tl-y.peak i{ box-shadow:0 0 0 2px var(--red), 0 0 14px var(--red); background:var(--red); width:13px; height:13px; margin-top:3px; }
+.tl-y b{ font-size:10.5px; color:var(--txt2); font-weight:600; }
+.tl-y span{ font-size:9px; color:var(--txt3); }
+.tl-y.peak b{ color:var(--red); }
+.tl-note{ position:absolute; top:0; border-radius:13px 13px 13px 3px; padding:8px 11px; max-width:180px;
+  background:rgba(251,191,36,.13); border:1px solid rgba(251,191,36,.4); backdrop-filter:blur(18px); }
+.tl-note::after{ content:""; position:absolute; left:14px; bottom:-7px; width:1.5px; height:7px; background:rgba(251,191,36,.5); }
+.tl-note.crit{ background:var(--red-dim); border-color:rgba(210,74,67,.4); border-radius:13px 13px 3px 13px; }
+.tl-note.crit::after{ left:auto; right:14px; background:rgba(210,74,67,.5); }
+.tl-note .n-who{ display:flex; align-items:center; gap:5px; font-size:9px; color:var(--gold); letter-spacing:1px; margin-bottom:3px; }
+.tl-note.crit .n-who{ color:var(--red); }
+.tl-note p{ font-size:10.5px; line-height:1.55; }
+
+/* ===== 传导链 ===== */
+.chain{ position:relative; height:230px; }
+.chain-svg{ position:absolute; inset:0; width:100%; height:100%; }
+.chain-svg path{ fill:none; stroke:rgba(45,180,160,.55); stroke-width:1.4; stroke-dasharray:4 6; animation:flow 1.6s linear infinite; }
+.chain-svg path.iso{ stroke:rgba(20,32,51,.25); animation:none; stroke-dasharray:2 5; }
+@keyframes flow{ to{ stroke-dashoffset:-20; } }
+.chain-node{ position:absolute; border-radius:16px; padding:9px 12px; text-align:center; backdrop-filter:blur(18px);
+  background:rgba(255,255,255,.78); border:1px solid var(--line); box-shadow:0 8px 18px rgba(28,46,70,.06); }
+.chain-node b{ display:block; font-size:12px; }
+.chain-node span{ display:block; font-size:9.5px; color:var(--txt3); margin-top:2px; }
+.chain-node .delta{ font-size:10px; font-weight:700; color:var(--amber); margin-top:2px; display:block; }
+.chain-node.src{ background:rgba(251,191,36,.14); border-color:rgba(251,191,36,.55); box-shadow:0 0 24px -4px rgba(251,191,36,.45); }
+.chain-node.src b{ color:var(--amber); font-size:13.5px; }
+.chain-node.alone{ border-style:dashed; border-color:rgba(210,74,67,.5); background:rgba(210,74,67,.06); }
+.chain-node.alone b{ color:var(--red); }
+.chain-node.hot{ box-shadow:0 0 0 2px var(--teal), 0 0 22px rgba(15,148,136,.4); }
+
+/* ===== 证据卡（人话翻译） ===== */
+.ev-card{ scroll-margin-top:12px; }
+.ev-card.flash{ animation:flashB 1.6s ease; }
+@keyframes flashB{ 0%,55%{ box-shadow:0 0 0 3px rgba(15,148,136,.5), 0 12px 28px rgba(28,46,70,.07);} 100%{ box-shadow:inset 0 1px 0 rgba(255,255,255,.72), 0 12px 28px rgba(28,46,70,.07);} }
+.ev-nums{ display:flex; align-items:baseline; gap:9px; margin:2px 0 8px; }
+.ev-nums b{ font-size:21px; font-weight:800; font-variant-numeric:tabular-nums; }
+.ev-nums .arrow{ font-size:12px; color:var(--txt3); }
+.ev-nums .ref{ margin-left:auto; font-size:10px; color:var(--txt3); }
+.spark{ display:flex; align-items:flex-end; gap:14px; height:52px; padding:0 2px 0; margin-bottom:10px; }
+.spark .sp{ flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; }
+.spark .sp i{ width:100%; max-width:52px; border-radius:6px 6px 3px 3px; height:var(--h); background:var(--c); opacity:.85; }
+.spark .sp span{ font-size:9px; color:var(--txt3); }
+.say{ font-family:var(--serif); font-size:13.5px; line-height:1.95; font-weight:600; padding:10px 12px; border-radius:4px 14px 4px 14px;
+  background:linear-gradient(168deg,#faf5e9, #f3ecd8); color:var(--paper-ink); position:relative; }
+.say::before{ content:"健康官解读"; position:absolute; top:-9px; left:12px; font-size:9px; letter-spacing:2px; color:var(--gold); background:#f9f4e7; padding:1px 8px; border-radius:99px; border:1px solid rgba(184,148,31,.3); font-family:var(--sans); font-weight:700; }
+.say b{ background:linear-gradient(transparent 62%, rgba(194,58,43,.2) 62%); }
+.say em{ font-style:normal; background:linear-gradient(transparent 62%, rgba(45,150,130,.25) 62%); }
+/* 证据页两块结构 */
+.blk-head{ display:flex; align-items:center; gap:9px; margin:6px 2px 10px; font-size:15px; font-weight:800; letter-spacing:1px; }
+.blk-head .no{ display:grid; place-items:center; width:22px; height:22px; border-radius:8px; color:#fff; font-size:12px; font-weight:800; background:var(--teal); }
+.ev-tabs{ display:grid; grid-template-columns:repeat(4,1fr); gap:4px; padding:5px; border-radius:99px; margin-bottom:12px; scroll-margin-top:14px;
+  background:rgba(20,32,51,.06); border:1px solid var(--line); }
+.ev-tab{ min-height:44px; border-radius:99px; font-size:12px; font-weight:700; letter-spacing:1px; color:var(--txt3); }
+.ev-tab.on{ color:#fff; background:linear-gradient(90deg,#0f9488,#0e7490); box-shadow:0 6px 14px -6px rgba(15,148,136,.55); }
+.ev-pane{ display:none; }
+.ev-pane.on{ display:block; animation:rise .25s ease both; }
+/* 指标卡 · 数值/单位/参考范围分区 */
+.metric{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:6px 0 4px; }
+.mbox{ padding:12px 13px; border-radius:16px; background:rgba(255,255,255,.66); box-shadow:inset 0 1px 0 rgba(255,255,255,.72); min-width:0; }
+.m-label{ display:block; font-size:10px; color:var(--txt3); letter-spacing:1px; margin-bottom:6px; font-weight:650; }
+.m-val{ font-size:25px; font-weight:800; line-height:1; font-variant-numeric:tabular-nums; }
+.m-unit{ font-size:11px; color:var(--txt2); margin-left:4px; font-weight:600; }
+.m-refval{ display:block; font-size:17px; font-weight:750; line-height:1.2; padding-top:4px; }
+.m-ref2{ display:block; margin-top:6px; font-size:10.5px; color:var(--txt3); font-weight:650; }
+/* 趋势图 · 带数值与参考线 */
+.trend2{ position:relative; height:136px; margin:10px 0 2px; padding:0 4px; }
+.t2-cols{ display:flex; align-items:stretch; justify-content:center; gap:30px; height:100%; }
+.t2-col{ display:flex; flex-direction:column; justify-content:flex-end; align-items:center; gap:5px; width:62px; }
+.t2-col b{ font-size:13.5px; font-weight:780; font-variant-numeric:tabular-nums; }
+.t2-col i{ width:100%; border-radius:9px 9px 4px 4px; height:var(--h); background:var(--c); opacity:.92; box-shadow:inset 0 1px 0 rgba(255,255,255,.4); }
+.t2-col span{ font-size:10.5px; color:var(--txt3); font-weight:650; }
+.t2-ref{ position:absolute; left:4px; right:4px; border-top:1.5px dashed rgba(210,74,67,.6); z-index:2; pointer-events:none; }
+.t2-ref em{ position:absolute; right:0; top:-17px; font-style:normal; font-size:9.5px; color:var(--red); font-weight:750; letter-spacing:.5px; background:rgba(255,255,255,.85); padding:1px 7px; border-radius:99px; }
+.ev-card .say{ margin-top:12px; }
+
+/* ===== 计划页 ===== */
+.curves svg{ width:100%; height:150px; display:block; }
+.cv-legend{ display:flex; gap:16px; justify-content:center; margin-top:6px; }
+.cv-legend span{ display:flex; align-items:center; gap:6px; font-size:10.5px; color:var(--txt2); }
+.cv-legend i{ width:16px; height:3px; border-radius:2px; font-style:normal; }
+.slider-zone{ position:relative; margin:16px 2px 4px; height:44px; touch-action:none; cursor:pointer; }
+.slider-track{ position:absolute; left:0; right:0; top:20px; height:5px; border-radius:3px; background:rgba(20,32,51,.12); }
+.slider-fill{ position:absolute; left:0; width:50%; top:20px; height:5px; border-radius:3px; background:linear-gradient(90deg, var(--teal), rgba(45,212,191,.4)); }
+.slider-handle{ position:absolute; left:50%; top:8px; transform:translateX(-50%); width:28px; height:28px; border-radius:50%;
+  background:#fff; box-shadow:0 3px 10px rgba(28,46,70,.22), 0 0 0 5px rgba(15,148,136,.12); }
+.slider-handle::before{ content:attr(data-m); position:absolute; top:-22px; left:50%; transform:translateX(-50%); font-size:10px; font-weight:700; white-space:nowrap; }
+.cv-readout{ display:flex; gap:10px; margin-top:8px; }
+.cv-readout .ro{ flex:1; border-radius:14px; padding:10px; text-align:center; }
+.cv-readout .ro span{ font-size:10px; letter-spacing:1px; display:block; margin-bottom:3px; }
+.cv-readout .ro b{ font-size:17px; font-variant-numeric:tabular-nums; }
+.cv-readout .ro.good{ background:var(--teal-dim); border:1px solid rgba(45,212,191,.3); }
+.cv-readout .ro.good span{ color:rgba(15,148,136,.7);} .cv-readout .ro.good b{ color:var(--teal); }
+.cv-readout .ro.bad{ background:var(--red-dim); border:1px solid rgba(248,113,113,.28); }
+.cv-readout .ro.bad span{ color:rgba(210,74,67,.7);} .cv-readout .ro.bad b{ color:var(--red); }
+.stage{ position:relative; padding-left:26px; }
+.stage::before{ content:""; position:absolute; left:8px; top:8px; bottom:-14px; width:2px; background:linear-gradient(rgba(45,212,191,.5), rgba(45,212,191,.08)); }
+.stage:last-child::before{ display:none; }
+.stage-dot{ position:absolute; left:1px; top:4px; width:16px; height:16px; border-radius:50%; background:var(--teal-dim); border:2px solid var(--teal); }
+.stage.off .stage-dot{ border-color:rgba(20,32,51,.22); background:rgba(20,32,51,.04); }
+.stage h4{ display:flex; align-items:center; gap:9px; font-size:13.5px; margin-bottom:9px; }
+.stage.off h4{ color:var(--txt2); }
+.stage ul{ list-style:none; margin-bottom:6px; }
+.stage li{ display:flex; align-items:center; gap:10px; padding:8px 0; font-size:12.5px; color:var(--txt2); min-height:36px; cursor:pointer; }
+.stage li .cb{ width:20px; height:20px; border-radius:7px; border:1.5px solid rgba(20,32,51,.22); flex-shrink:0; position:relative; }
+.stage li.done{ color:var(--txt); }
+.stage li.done .cb{ background:var(--teal); border-color:var(--teal); }
+.stage li.done .cb::after{ content:""; position:absolute; left:6px; top:2.5px; width:5px; height:9px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(42deg); }
+.stage li .li-tag{ margin-left:auto; flex-shrink:0; }
+.stage .gain{ margin:0 0 18px; padding:8px 11px; border-radius:12px; font-size:11.5px; font-weight:600; color:var(--green); background:rgba(52,211,153,.1); border:1px solid rgba(52,211,153,.24); }
+.qa-fold{ margin:2px 0 14px; }
+.qa-btn{ display:flex; align-items:center; gap:7px; min-height:36px; color:var(--teal); font-size:11.5px; font-weight:600; letter-spacing:1px; }
+.qa-btn svg{ width:12px; height:12px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; transition:transform .2s; }
+.qa-list{ display:none; padding:2px 0 4px 16px; font-size:11.5px; line-height:1.9; color:var(--txt2); }
+.qa-fold.open .qa-list{ display:block; } .qa-fold.open .qa-btn svg{ transform:rotate(180deg); }
+/* 本周执行 */
+.week-top{ display:flex; gap:14px; align-items:center; margin-bottom:8px; }
+.week-ring{ --p:0%; position:relative; width:90px; height:90px; border-radius:50%; flex-shrink:0;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  background:conic-gradient(var(--teal) var(--p), rgba(20,32,51,.1) var(--p)); }
+.week-ring::before{ content:""; position:absolute; inset:9px; border-radius:50%; background:#f4f9fb; }
+.week-ring b{ position:relative; font-size:19px; font-weight:800; }
+.week-ring span{ position:relative; font-size:9px; color:var(--txt3); margin-top:2px; letter-spacing:1px; }
+.week-side{ flex:1; display:grid; gap:8px; min-width:0; }
+.wk-gain{ font-size:11.5px; font-weight:650; line-height:1.5; color:var(--green); background:rgba(35,155,98,.09); border:1px solid rgba(35,155,98,.25); padding:8px 11px; border-radius:12px; }
+.wk-streak{ font-size:11px; color:var(--txt2); font-weight:650; }
+.task{ display:flex; gap:10px; align-items:center; padding:12px 0; }
+.task + .task{ border-top:1px solid rgba(28,46,70,.08); }
+.t-ic{ width:34px; height:34px; border-radius:12px; flex-shrink:0; display:grid; place-items:center; font-size:12px; font-weight:800; color:#fff; }
+.t-ic.red{ background:linear-gradient(140deg,#d24a43,#a83a34); }
+.t-ic.teal{ background:linear-gradient(140deg,#0f9488,#0b6e66); }
+.t-ic.blue{ background:linear-gradient(140deg,#0e7490,#0a5468); }
+.t-main{ flex:1; min-width:0; }
+.t-main b{ display:block; font-size:12.5px; line-height:1.4; }
+.t-main > span{ display:block; margin-top:3px; font-size:10.5px; color:var(--txt3); line-height:1.5; }
+.hdots{ display:inline-flex; gap:4px; margin-left:6px; vertical-align:1px; }
+.hdot{ width:8px; height:8px; border-radius:50%; background:rgba(20,32,51,.13); }
+.hdot.on{ background:var(--teal); box-shadow:0 0 6px rgba(15,148,136,.5); }
+.t-btn{ flex-shrink:0; min-height:44px; min-width:44px; padding:0 13px; border-radius:99px; font-size:11.5px; font-weight:750; letter-spacing:.5px; transition:all .15s; }
+.t-btn.s0{ color:#fff; background:linear-gradient(90deg,#0f9488,#0e7490); box-shadow:0 6px 14px -6px rgba(15,148,136,.5); }
+.t-btn.s1{ color:var(--amber); background:rgba(183,121,31,.12); border:1px solid rgba(183,121,31,.35); }
+.t-btn.s2{ color:var(--green); background:rgba(35,155,98,.11); border:1px solid rgba(35,155,98,.3); }
+/* 提醒 */
+.next-remind{ padding:11px 13px; border-radius:14px; background:rgba(15,148,136,.07); border:1px solid rgba(15,148,136,.25); font-size:11.5px; line-height:1.7; margin-bottom:6px; }
+.remind-row{ display:flex; align-items:center; gap:10px; padding:11px 0; }
+.remind-row + .remind-row{ border-top:1px solid rgba(28,46,70,.08); }
+.remind-row .r-main{ flex:1; min-width:0; }
+.r-main b{ display:block; font-size:12px; }
+.r-main span{ display:block; margin-top:2px; font-size:10.5px; color:var(--txt3); line-height:1.5; }
+.tglA{ width:46px; height:27px; border-radius:99px; background:rgba(20,32,51,.16); position:relative; transition:.2s; flex-shrink:0; cursor:pointer; }
+.tglA::before{ content:""; position:absolute; inset:-10px; }
+.tglA::after{ content:""; position:absolute; top:3px; left:3px; width:21px; height:21px; border-radius:50%; background:#fff; transition:left .2s; box-shadow:0 1px 4px rgba(28,46,70,.3); }
+.tglA.on{ background:var(--teal); }
+.tglA.on::after{ left:22px; }
+.say.wk::before{ content:"周报示例"; }
+.week-report{ overflow:hidden; }
+.weekly-case{ margin-top:13px; padding:12px; border-radius:16px; background:rgba(255,255,255,.58); border:1px solid rgba(28,46,70,.08); }
+.weekly-title{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:10px; }
+.weekly-title b{ font-size:12.5px; letter-spacing:1px; }
+.weekly-title span{ font-size:10px; color:var(--txt3); white-space:nowrap; padding-top:2px; }
+.weekly-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:7px; margin-bottom:9px; }
+.weekly-stat{ padding:9px 5px; border-radius:12px; background:rgba(15,148,136,.07); text-align:center; border:1px solid rgba(15,148,136,.16); }
+.weekly-stat b{ display:block; font-size:15px; font-weight:800; font-variant-numeric:tabular-nums; color:var(--teal); }
+.weekly-stat span{ display:block; margin-top:2px; font-size:9.5px; color:var(--txt3); }
+.weekly-line{ display:flex; gap:8px; align-items:flex-start; padding:8px 0; border-top:1px solid rgba(28,46,70,.08); }
+.weekly-line p{ flex:1; min-width:0; font-size:11.5px; line-height:1.65; color:var(--txt2); }
+.weekly-line p b{ color:var(--txt); }
+
+/* ===== 档案页 ===== */
+.profile-card{ display:flex; align-items:center; gap:13px; }
+.p-ava{ width:52px; height:52px; border-radius:19px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(140deg, rgba(45,212,191,.35), rgba(99,102,241,.35)); font-size:20px; font-weight:800; color:#fff; font-family:var(--serif); }
+.p-info{ flex:1; }
+.p-info b{ font-size:16px; letter-spacing:1px; }
+.p-info span{ display:block; font-size:11px; color:var(--txt3); margin-top:3px; }
+.report-row{ display:flex; align-items:center; gap:11px; padding:12px 2px; min-height:44px; }
+.report-row + .report-row{ border-top:1px solid rgba(28,46,70,.08); }
+.report-row .r-year{ font-size:14px; font-weight:800; width:44px; font-variant-numeric:tabular-nums; }
+.report-row .r-desc{ flex:1; font-size:11.5px; color:var(--txt2); }
+.divider-label{ display:flex; align-items:center; gap:12px; margin:20px 2px 14px; font-size:10.5px; letter-spacing:2px; color:var(--txt3); }
+.divider-label::before, .divider-label::after{ content:""; flex:1; height:1px; background:rgba(28,46,70,.1); }
+.mini-verdict{ border-radius:20px; padding:15px; margin-bottom:13px; backdrop-filter:blur(20px); position:relative; }
+.mini-verdict.severe{ background:rgba(248,113,113,.08); border:1px solid rgba(248,113,113,.32); }
+.mini-verdict.calm{ background:rgba(52,211,153,.07); border:1px solid rgba(52,211,153,.3); }
+.mv-top{ display:flex; align-items:center; gap:9px; margin-bottom:9px; }
+.mv-top .p-ava{ width:34px; height:34px; border-radius:12px; font-size:13px; }
+.mini-verdict.severe .p-ava{ background:linear-gradient(140deg, rgba(248,113,113,.4), rgba(190,60,90,.4)); }
+.mini-verdict.calm .p-ava{ background:linear-gradient(140deg, rgba(52,211,153,.36), rgba(45,160,190,.34)); }
+.mv-top .who b{ font-size:12.5px; display:block; }
+.mv-top .who span{ font-size:9.5px; color:var(--txt3); }
+.mv-top .chip{ margin-left:auto; }
+.mv-quote{ font-family:var(--serif); font-size:13px; line-height:1.85; font-weight:600; }
+.mini-verdict.severe .mv-quote b{ color:var(--red); }
+.mv-tone{ position:absolute; top:-9px; right:14px; font-size:9px; letter-spacing:1px; padding:3px 9px; border-radius:99px; background:#fff; border:1px solid var(--line); color:var(--txt2); }
+.src-grid{ display:flex; gap:8px; }
+.src-cell{ flex:1; padding:12px 6px; border-radius:16px; background:rgba(255,255,255,.6); text-align:center; }
+.src-cell b{ display:block; font-size:19px; font-weight:800; }
+.src-cell span{ font-size:10px; color:var(--txt3); }
+.ref-row{ padding:10px 2px; }
+.ref-row + .ref-row{ border-top:1px solid rgba(28,46,70,.08); }
+.ref-row b{ display:block; font-size:12px; color:var(--teal); font-weight:700; }
+.ref-row span{ font-size:10.5px; color:var(--txt3); }
+.legal{ font-size:10.5px; line-height:1.8; color:var(--txt3); padding:12px 2px 0; }
+
+/* ===== 揭幕片 ===== */
+.intro{ position:absolute; inset:0; z-index:100; overflow:hidden;
+  background:
+    radial-gradient(70% 46% at 50% 0%, rgba(15,148,136,.14), transparent 62%),
+    radial-gradient(60% 40% at 85% 90%, rgba(184,148,31,.12), transparent 60%),
+    linear-gradient(180deg,#f7fafc,#e9eff5);
+  color:var(--txt); display:flex; align-items:center; justify-content:center; }
+.intro.hidden{ display:none; }
+.intro-skip{ position:absolute; top:24px; right:20px; z-index:30; min-height:38px; padding:0 18px; border-radius:99px;
+  color:var(--txt2); font-size:12px; letter-spacing:2px; background:rgba(255,255,255,.82); border:1px solid var(--line); backdrop-filter:blur(12px); }
+.intro.st4 .intro-skip{ display:none; }
+.intro-next{ position:absolute; bottom:52px; left:50%; transform:translateX(-50%); z-index:30;
+  min-height:46px; padding:0 30px; border-radius:99px; color:#fff; font-size:14px; font-weight:800; letter-spacing:2px;
+  background:linear-gradient(90deg,#0f9488,#0e7490); box-shadow:0 14px 34px rgba(28,46,70,.3); }
+.intro-next.hidden{ display:none; }
+.iscene{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:30px; opacity:0; pointer-events:none; transition:opacity .7s ease; }
+.iscene.on{ opacity:1; pointer-events:auto; }
+.iscene .inner{ text-align:center; max-width:320px; position:relative; z-index:3; }
+.i-name{ font-family:var(--serif); font-size:32px; font-weight:800; letter-spacing:3px; }
+.i-sub{ font-size:12.5px; color:var(--txt2); letter-spacing:1px; margin-top:10px; line-height:1.8; }
+.i-line{ font-family:var(--serif); font-size:19px; line-height:1.95; font-weight:700; }
+.i-line em{ font-style:normal; color:var(--teal); }
+.frags{ position:absolute; inset:0; z-index:1; pointer-events:none; }
+.frag{ position:absolute; padding:6px 10px; border-radius:11px; font-size:11px; font-weight:700; white-space:nowrap;
+  color:var(--txt2); background:rgba(255,255,255,.8); border:1px solid var(--line); backdrop-filter:blur(8px);
+  left:var(--x); top:var(--y); opacity:0; transform:translate(-50%,-50%) scale(.7);
+  transition:all 1.2s cubic-bezier(.2,.8,.2,1); }
+.frag.warn{ color:var(--amber); border-color:rgba(183,121,31,.45); background:rgba(183,121,31,.10); }
+.frag.abn{ color:var(--red); border-color:rgba(210,74,67,.45); background:rgba(210,74,67,.09); }
+.intro.st1 .frag{ opacity:1; transform:translate(-50%,-50%) scale(1); }
+.intro.st2 .frag{ left:var(--tx); top:var(--ty); opacity:1; transform:translate(-50%,-50%) scale(.9); }
+.intro.st3 .frag, .intro.st4 .frag{ left:50%; top:50%; opacity:0; transform:translate(-50%,-50%) scale(.2); }
+.i-tl{ position:absolute; left:12%; right:12%; top:66%; height:2px; background:rgba(20,32,51,.18); opacity:0; transition:opacity .6s; z-index:1; }
+.i-tl i{ position:absolute; top:-26px; font-size:12px; font-style:normal; font-weight:700; color:var(--txt3); transform:translateX(-50%); }
+.i-tl i::after{ content:""; position:absolute; left:50%; top:24px; width:7px; height:7px; border-radius:50%; background:rgba(20,32,51,.35); transform:translateX(-50%); }
+.intro.st2 .i-tl{ opacity:1; }
+.intro.st3 .i-tl, .intro.st4 .i-tl{ opacity:0; }
+/* 会诊场景 */
+.i-consult{ position:absolute; inset:0; }
+.i-doc{ position:absolute; max-width:172px; border-radius:16px; padding:10px 12px; backdrop-filter:blur(14px);
+  background:rgba(255,255,255,.78); border:1px solid var(--line);
+  opacity:0; transform:scale(.85); transition:all .5s ease; }
+.i-doc.lit{ opacity:1; transform:scale(1); background:rgba(255,255,255,.95); border-color:rgba(15,148,136,.4); box-shadow:0 0 26px -6px rgba(15,148,136,.4); }
+.i-doc.dim2{ opacity:.45; transform:scale(.94); }
+.i-doc .d-who{ display:flex; align-items:center; gap:6px; margin-bottom:5px; }
+.i-doc .d-dot{ width:8px; height:8px; border-radius:50%; }
+.i-doc .d-who b{ font-size:11px; letter-spacing:1px; color:var(--txt); }
+.i-doc p{ font-size:11px; line-height:1.6; color:var(--txt2); }
+.i-lines line{ stroke:rgba(15,148,136,.5); stroke-width:1.3; stroke-dasharray:5 7; animation:flow 1.3s linear infinite; opacity:0; transition:opacity .5s; }
+.intro.st3 .i-lines line{ opacity:1; }
+.i-center{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; gap:8px; z-index:2; }
+.i-center .medal{ width:82px; height:82px; padding:3px; }
+.i-center .medal i{ font-size:26px; }
+.i-center b{ font-size:12.5px; color:var(--gold); letter-spacing:2px; }
+.i-center span{ font-size:10px; color:var(--txt3); letter-spacing:1px; }
+.i-pulse{ position:absolute; left:50%; top:0; width:82px; height:82px; transform:translateX(-50%); border-radius:50%;
+  border:1.5px solid rgba(231,197,106,.5); animation:ipulse 2.2s ease-out infinite; }
+@keyframes ipulse{ from{ transform:translateX(-50%) scale(1); opacity:.8;} to{ transform:translateX(-50%) scale(2); opacity:0;} }
+/* 卷宗 */
+.i-paper{ width:262px; margin:0 auto; padding:26px 20px 20px; border-radius:8px 20px 8px 20px; position:relative; text-align:center;
+  background:radial-gradient(rgba(44,36,22,.05) 1px, transparent 1px), linear-gradient(168deg,#f9f4e7,#efe6cf);
+  background-size:7px 7px,100% 100%; color:var(--paper-ink);
+  transform:translateY(20px) scale(.92); opacity:0; transition:all .8s cubic-bezier(.2,.8,.2,1); box-shadow:0 30px 60px -20px rgba(115,84,14,.35); }
+.iscene.on .i-paper{ transform:none; opacity:1; }
+.i-paper h3{ font-family:var(--serif); font-size:16.5px; letter-spacing:1px; margin-bottom:6px; }
+.i-paper p{ font-size:11px; color:var(--paper-ink2); letter-spacing:1px; }
+.i-paper .seal{ position:absolute; right:10px; bottom:10px; width:58px; height:58px;
+  transform:rotate(-12deg) scale(2.4); opacity:0; transition:all .45s cubic-bezier(.3,1.5,.4,1) .9s; }
+.iscene.on .i-paper .seal{ transform:rotate(-12deg) scale(1); opacity:.88; }
+.i-paper::before{ content:""; position:absolute; inset:7px; border:1px solid rgba(44,36,22,.18); border-radius:4px 14px 4px 14px; pointer-events:none; }
+.i-say{ margin:0; font-family:var(--serif); font-size:14px; line-height:2.05; font-weight:600; color:var(--paper-ink); text-align:left; position:relative; }
+.i-sign{ margin-top:12px; padding-right:70px; font-family:var(--kai); font-size:13.5px; letter-spacing:2px; color:var(--paper-ink); text-align:left; }
+.i-sign span{ display:block; margin-top:4px; font-size:10.5px; color:var(--paper-ink2); letter-spacing:1.5px; }
+.i-enter{ margin-top:26px; min-height:46px; padding:0 32px; border-radius:99px; color:#fff; font-size:14px; font-weight:800; letter-spacing:2px;
+  background:linear-gradient(90deg,#0f9488,#0e7490); box-shadow:0 14px 34px rgba(28,46,70,.3); }
+.i-steps{ position:absolute; bottom:26px; left:0; right:0; display:flex; justify-content:center; gap:8px; z-index:5; }
+.i-steps i{ width:7px; height:7px; border-radius:50%; background:rgba(20,32,51,.2); }
+.i-steps i.on{ background:var(--teal); box-shadow:0 0 8px rgba(15,148,136,.6); }
+
+@media (max-width:700px){
+  body{ display:block; padding:0; }
+  .phone{ width:100%; height:100dvh; min-height:100dvh; padding:0; border-radius:0; background:transparent; box-shadow:none; }
+  .screen{ border-radius:0; }
+}
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{ animation:none !important; transition:none !important; }
+}
+</style>
+</head>
+<body>
+
+<a href="../index.html" aria-label="返回方案列表" style="position:fixed;top:12px;left:12px;z-index:99999;display:inline-flex;align-items:center;gap:4px;min-height:36px;padding:0 14px;border-radius:99px;font:600 13px/1 -apple-system,'PingFang SC',sans-serif;color:#0f9488;text-decoration:none;background:rgba(255,255,255,.86);border:1px solid rgba(28,46,70,.14);box-shadow:0 4px 14px rgba(28,46,70,.16);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)">‹ 首页</a>
+
+<div class="phone"><div class="screen">
+  <div class="island"></div>
+
+  <!-- ================= 揭幕片：线索归档 · 联合会诊 ================= -->
+  <div class="intro" id="intro">
+    <button class="intro-skip" id="skipBtn" type="button">跳过</button>
+
+    <div class="frags" id="frags"></div>
+    <div class="i-tl" id="itl"><i style="left:16%">2024</i><i style="left:50%">2025</i><i style="left:84%">2026</i></div>
+
+    <!-- 幕1 · 你是谁 -->
+    <div class="iscene on" id="is1">
+      <div class="inner">
+        <p class="i-name">许家佑</p>
+        <p class="i-sub">男 · 45 岁<br>2024 – 2026 ｜ 3 份体检报告 · 8 份补充资料</p>
+      </div>
+    </div>
+
+    <!-- 幕2 · 线索归档 -->
+    <div class="iscene" id="is2">
+      <div class="inner" style="transform:translateY(-110px)">
+        <p class="i-line">过去 3 年，你的身体<br>一直在留下<em>线索</em>。</p>
+      </div>
+    </div>
+
+    <!-- 幕3 · 联合会诊 -->
+    <div class="iscene" id="is3">
+      <div class="i-consult">
+        <svg class="i-lines" style="position:absolute;inset:0;width:100%;height:100%" viewBox="0 0 390 780" preserveAspectRatio="none">
+          <line x1="177" y1="338" x2="110" y2="130"/>
+          <line x1="218" y1="346" x2="290" y2="200"/>
+          <line x1="172" y1="436" x2="104" y2="584"/>
+          <line x1="215" y1="440" x2="288" y2="622"/>
+        </svg>
+        <div class="i-doc" id="idoc1" style="left:18px; top:12%; width:180px;">
+          <div class="d-who"><span class="d-dot" style="background:#fbbf24"></span><b>内分泌与代谢科</b></div>
+          <p>「血糖三年 5.4 → 7.2，和体重同步在爬。」</p>
+        </div>
+        <div class="i-doc" id="idoc2" style="right:14px; top:21%; width:168px;">
+          <div class="d-who"><span class="d-dot" style="background:#f87171"></span><b>心内科</b></div>
+          <p>「胆固醇、血压同向走高。」</p>
+        </div>
+        <div class="i-doc" id="idoc3" style="left:16px; top:71%; width:172px;">
+          <div class="d-who"><span class="d-dot" style="background:#7dd3fc"></span><b>肾内科</b></div>
+          <p>「尿蛋白 280，必须复查确认。」</p>
+        </div>
+        <div class="i-doc" id="idoc4" style="right:16px; top:76%; width:168px;">
+          <div class="d-who"><span class="d-dot" style="background:#a78bfa"></span><b>泌尿外科</b></div>
+          <p>「PSA 三年翻了三倍。」</p>
+        </div>
+        <div class="i-center">
+          <div class="i-pulse"></div>
+          <div class="medal"><i class="face"></i></div>
+          <b>私人健康官</b>
+          <span id="icenterSub">正在听取 4 个学科的意见…</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 幕4 · 健康官亲口交付 -->
+    <div class="iscene" id="is4">
+      <div class="inner">
+        <div class="medal" style="width:56px;height:56px;margin:0 auto 9px"><i class="face"></i></div>
+        <p class="i-sub" style="margin:0 0 14px;letter-spacing:2px">私人健康官</p>
+        <div class="i-paper">
+          <p class="i-say">「许先生，您好。您近 3 年的体检报告我已逐份审阅，并组织内分泌、心血管、肾内、泌尿四个学科完成联合评估，存在分歧的项目均已逐一复核。以下是您的综合报告。」</p>
+          <div class="i-sign">私人健康官<span>二〇二六年七月三日 · 健诊字〔2026〕07 号</span></div>
+          <div class="seal"><span class="star">★</span><span class="s1">联合会诊</span><span class="s2">专用章</span></div>
+        </div>
+        <button class="i-enter" id="enterBtn" type="button">查看报告</button>
+      </div>
+    </div>
+
+    <button class="intro-next" id="nextBtn" type="button">下一步 ›</button>
+    <div class="i-steps" id="isteps"><i class="on"></i><i></i><i></i><i></i></div>
+  </div>
+
+  <!-- ================= App ================= -->
+  <div class="statusbar"><span>9:41</span><span style="font-size:11.5px;color:var(--txt2)">5G ▮▮▮▯ ▐▐</span></div>
+
+  <div class="app-body" id="appBody">
+
+    <!-- ========== Tab 判决 ========== -->
+    <section class="page on" id="pg-verdict">
+      <div class="app-head">
+        <div class="t">智三多报告</div>
+        <button class="pill-btn" id="replayBtn" type="button">▶ 重看开场</button>
+      </div>
+
+      <div class="endorse">
+        <svg viewBox="0 0 24 24"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5z"/><path d="M9 12l2 2 4-4"/></svg>
+        <div class="e-t">多年报告 4 学科联合解读 · 2024–2026<small>联合会诊 · 健康官综合评定 · 依据临床指南</small></div>
+      </div>
+
+      <div class="verdict-paper">
+        <div class="vp-head">
+          <div class="medal"><i class="face"></i></div>
+          <div class="who"><b>私人健康官 · 综合报告</b></div>
+        </div>
+        <div class="vp-text">许先生，我看了你 3 年报告。未见急危信号，但有 <span class="hl">2 项需要 1–2 周内复查确认</span>——PSA 在快速爬升，尿蛋白单次重度异常。主线是<span class="hl">代谢风险在累积</span>：血糖、血脂、血压正随体重同步走高。<span class="hl-t">现在管，来得及</span>——先把 2 项复查做掉，同步启动 <span class="hl-t">90 天减重</span>，多数指标会跟着回头。</div>
+        <div class="vp-foot">
+          <div class="vp-sign">
+            <div class="k">私人健康官</div>
+            <div class="d">二〇二六年七月三日</div>
+          </div>
+          <div class="seal"><span class="star">★</span><span class="s1">联合会诊</span><span class="s2">专用章</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">你的位置 · 区间 + 方向<span class="chip-r chip grey">非确诊</span></div>
+        <div class="score-inline">
+          <div class="score-num">66<small>健康分 · 中风险</small></div>
+          <div style="flex:1">
+            <div class="dist-track" style="margin-top:14px"><div class="dist-marker"></div></div>
+            <div class="dist-scale"><span>健康</span><span>临界</span><span>疾病</span></div>
+          </div>
+        </div>
+        <p class="dist-desc">位于<b>临界区间</b>，近三年方向：<b>仍在向风险侧移动 →</b>。这个位置的特点是——大多数变化仍可通过生活方式逆转。</p>
+      </div>
+
+      <div class="card" style="padding:6px 16px;">
+        <div class="card-title" style="margin:12px 0 2px">风险一览 · 点击看证据与结论</div>
+        <button class="risk-row" data-jump="ev-psa" type="button">
+          <span class="risk-dot" style="background:var(--red)"></span>
+          <span class="risk-tx"><b>PSA 持续快速上升</b><span>三年 1.2 → 3.8 · 泌尿外科主张专科复查</span></span>
+          <span class="risk-go"><span class="chip red">1–2周</span><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span>
+        </button>
+        <button class="risk-row" data-jump="ev-uacr" type="button">
+          <span class="risk-dot" style="background:var(--red)"></span>
+          <span class="risk-tx"><b>尿蛋白 280 · 重度异常</b><span>单次检出 · 需复查确认是否肾脏受累</span></span>
+          <span class="risk-go"><span class="chip red">1–2周</span><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span>
+        </button>
+        <button class="risk-row" data-jump="ev-meta" type="button">
+          <span class="risk-dot" style="background:var(--amber)"></span>
+          <span class="risk-tx"><b>代谢链 · 血糖/血脂/血压随体重走高</b><span>血糖 7.2 需尽快确认 · 一条链，不是三件事</span></span>
+          <span class="risk-go"><span class="chip amber">90天</span><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span>
+        </button>
+        <div id="blueZone">
+          <div class="blue-fold">
+            <button class="risk-row" data-jump="ev-watch" type="button" style="flex:1">
+              <span class="risk-dot" style="background:var(--teal)"></span>
+              <span class="risk-tx"><b>ALT / 尿酸波动 · 甲状腺结节 3 类</b><span>观察项 · 按期随访即可，不必焦虑</span></span>
+              <span class="risk-go"><span class="chip teal">6个月</span><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span>
+            </button>
+          </div>
+          <button class="fold-btn" id="blueBtn" type="button">保持观察 2 项<svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></button>
+        </div>
+      </div>
+
+      <div class="strip good">
+        <span class="s-tag">好消息</span>
+        <p>你<b>连续 3 年坚持体检并留全了资料</b>——这是本次能做联合判断的前提，多数人做不到。另：甲状腺结节 3 年<b>无进展</b>。</p>
+      </div>
+      <div class="strip act">
+        <span class="s-tag">行动</span>
+        <div style="flex:1;min-width:0">
+          <p>只有三件事：<b>① 1–2 周约泌尿外科</b>（PSA）<b>② 同周晨尿 + HbA1c</b>（尿蛋白/血糖确认）<b>③ 今天启动 90 天减重</b></p>
+          <button class="t-btn s0" data-goplan type="button" style="width:100%;min-height:40px;margin-top:10px">去计划页执行 ›</button>
+        </div>
+      </div>
+
+      <p class="legal" style="text-align:center">本解读不构成医疗诊断与治疗建议 · 结论以执业医师面诊为准</p>
+    </section>
+
+    <!-- ========== Tab 证据 ========== -->
+    <section class="page" id="pg-evidence">
+      <div class="app-head">
+        <div class="t">证据<small>3 年 · 9 项指标 · 4 学科</small></div>
+        <div class="chip teal" style="align-self:center">报告依据</div>
+      </div>
+
+      <div class="blk-head"><span class="no">1</span>身体与学科概览</div>
+
+      <div class="card" style="padding-bottom:10px;" id="ev-council">
+        <div class="card-title">会诊团 · 谁说了什么<span class="chip-r chip red">1 处分歧</span></div>
+        <div class="doc-row">
+          <div class="doc-ava" style="background:linear-gradient(140deg,#d97706,#b45309)">内</div>
+          <div class="doc-info"><div class="d-top"><b>内分泌与代谢科</b><span class="chip amber">预警</span></div>
+          <p>血糖三年 5.4 → 7.2 与体重同步，胰岛素抵抗可能性大。先 HbA1c 确认，减重是根。</p></div>
+        </div>
+        <div class="doc-row">
+          <div class="doc-ava" style="background:linear-gradient(140deg,#dc2626,#991b1b)">心</div>
+          <div class="doc-info"><div class="d-top"><b>心内科</b><span class="chip amber">临界</span></div>
+          <p>胆固醇 5.8 + 血压 145 同向走高。补齐血脂四项和 7 天家庭血压，再定干预强度。</p></div>
+        </div>
+        <div class="doc-row">
+          <div class="doc-ava" style="background:linear-gradient(140deg,#0284c7,#075985)">肾</div>
+          <div class="doc-info"><div class="d-top"><b>肾内科</b><span class="chip red">分歧</span></div>
+          <p>尿蛋白 280 是重度异常，且血糖血压都在上行——主张立即肾内科专科评估。</p></div>
+        </div>
+        <div class="doc-row">
+          <div class="doc-ava" style="background:linear-gradient(140deg,#7c3aed,#5b21b6)">泌</div>
+          <div class="doc-info"><div class="d-top"><b>泌尿外科</b><span class="chip red">优先</span></div>
+          <p>PSA 虽未超 4.0，但三年翻三倍，升速异常——主张 1–2 周内专科复查。</p></div>
+        </div>
+
+        <div id="disputeZone">
+          <button class="dispute-toggle" type="button" id="dispBtn">查看学科分歧（1）· 已复核评定<svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></button>
+          <div class="dispute-panel">
+            <div class="dp-head">分歧焦点 · 尿蛋白 280 怎么处理</div>
+            <div class="dp-side a">
+              <span class="tag">主张 A</span>
+              <p><b style="color:#c026d3">肾内科</b>：重度异常叠加血糖血压上行，应立即挂肾内科专科评估。</p>
+            </div>
+            <div class="dp-side b">
+              <span class="tag">主张 B</span>
+              <p><b style="color:#0369a1">全科视角</b>：单次检出可能受运动、感染干扰，先复查晨尿排除假阳性，再决定是否专科。</p>
+            </div>
+            <div class="dp-verdict">
+              <span class="mini-medal"><i class="face"></i></span>
+              <p><b>健康官综合意见 · 采纳 B（有保留）</b>：1–2 周内晨尿复查 UACR + 肌酐/eGFR 先行；<b>但若复查仍异常，立即转肾内科</b>——此兜底条件已写入计划页第 14 天节点。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">三年怎么走到今天 · 健康官批注</div>
+        <div class="timeline">
+          <div class="tl-note" style="left:22%;">
+            <div class="n-who">健康官批注</div>
+            <p><b style="color:var(--amber)">2025</b>：血糖越线，建议复查——没做</p>
+          </div>
+          <div class="tl-note crit below" style="right:0;">
+            <div class="n-who">健康官批注</div>
+            <p><b style="color:var(--red)">2026</b>：两项红档，这次别再放过</p>
+          </div>
+          <div class="tl-track">
+            <div class="tl-line"></div>
+            <div class="tl-years">
+              <div class="tl-y"><i></i><b>2024</b><span>基本平稳</span></div>
+              <div class="tl-y warn"><i></i><b>2025</b><span>多项越线</span></div>
+              <div class="tl-y peak"><i></i><b>2026</b><span>两项红档</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="blk-head" style="margin-top:22px"><span class="no">2</span>指标解读 · 按项切换</div>
+
+      <div class="ev-tabs" id="evTabs">
+        <button class="ev-tab on" data-ev="ev-psa" type="button">PSA</button>
+        <button class="ev-tab" data-ev="ev-uacr" type="button">尿蛋白</button>
+        <button class="ev-tab" data-ev="ev-meta" type="button">代谢链</button>
+        <button class="ev-tab" data-ev="ev-watch" type="button">观察区</button>
+      </div>
+
+      <div class="ev-pane on" id="ev-psa">
+        <div class="card ev-card">
+          <div class="card-title">PSA · 泌尿外科<span class="chip-r chip red">优先复查</span></div>
+          <div class="metric">
+            <div class="mbox">
+              <span class="m-label">当前值（2026）</span>
+              <b class="m-val" style="color:var(--red)">3.8</b><span class="m-unit">ng/mL</span>
+            </div>
+            <div class="mbox">
+              <span class="m-label">参考范围</span>
+              <b class="m-refval">&lt; 4.0 <small style="font-size:11px;color:var(--txt2)">ng/mL</small></b>
+            </div>
+          </div>
+          <div class="trend2">
+            <div class="t2-ref" style="bottom:106px"><em>参考上限 4.0</em></div>
+            <div class="t2-cols">
+              <div class="t2-col"><b style="color:var(--teal)">1.2</b><i style="--h:26px;--c:var(--teal)"></i><span>2024</span></div>
+              <div class="t2-col"><b style="color:var(--amber)">2.2</b><i style="--h:48px;--c:var(--amber)"></i><span>2025</span></div>
+              <div class="t2-col"><b style="color:var(--red)">3.8</b><i style="--h:83px;--c:var(--red)"></i><span>2026</span></div>
+            </div>
+          </div>
+          <p class="say">还没超标，但<b>三年翻了三倍</b>——对这项指标，升速比数值更要紧。可能是炎症、增生，也可能是更严重问题的早期信号。<em>现在查，处理窗口最好</em>。复查前 48 小时别骑车。</p>
+        </div>
+      </div>
+
+      <div class="ev-pane" id="ev-uacr">
+        <div class="card ev-card">
+          <div class="card-title">尿蛋白（UACR）· 肾内科<span class="chip-r chip red">优先复查</span></div>
+          <div class="metric">
+            <div class="mbox">
+              <span class="m-label">当前值（2026 · 单次检出）</span>
+              <b class="m-val" style="color:var(--red)">280</b><span class="m-unit">mg/g</span>
+            </div>
+            <div class="mbox">
+              <span class="m-label">参考范围</span>
+              <b class="m-refval">&lt; 30 <small style="font-size:11px;color:var(--txt2)">mg/g</small></b>
+              <span class="m-ref2" style="color:var(--red);font-weight:700">超出参考上限约 9 倍</span>
+            </div>
+          </div>
+          <p class="say">它回答的是"<b>肾脏在不在漏蛋白</b>"。单次异常不等于肾病——运动、感染都能干扰，但 280 的幅度<b>必须复查确认</b>。<em>怎么查、先挂哪科，健康官已在上方给出综合意见</em>。</p>
+        </div>
+      </div>
+
+      <div class="ev-pane" id="ev-meta">
+        <div class="card ev-card">
+          <div class="card-title">代谢链 · 内分泌 + 心内<span class="chip-r chip amber">需要管理</span></div>
+          <p class="caption" style="margin:2px 0 8px">节点内数值 = 2024 → 2026 的三年变化 · 红色 = 已越线</p>
+          <div class="chain" style="height:302px">
+            <svg class="chain-svg" viewBox="0 0 354 302" preserveAspectRatio="none">
+              <path d="M102 120 C 150 58, 195 34, 232 34"/>
+              <path d="M106 134 C 160 132, 200 118, 232 112"/>
+              <path d="M102 148 C 150 194, 195 196, 232 190"/>
+              <path class="iso" d="M98 162 C 128 232, 158 264, 200 268"/>
+            </svg>
+            <div class="chain-node src" data-chain style="left:0; top:96px; width:100px;">
+              <b>体重 / BMI</b><span>链条起点</span><span class="delta">BMI 24.5 → 26.8</span>
+            </div>
+            <div class="chain-node" data-chain style="right:0; top:0; width:118px;">
+              <b>空腹血糖</b><span>内分泌 · 需确认</span><span class="delta" style="color:var(--red)">5.4 → 7.2</span>
+            </div>
+            <div class="chain-node" data-chain style="right:0; top:78px; width:118px;">
+              <b>胆固醇 · 血压</b><span>心内科</span><span class="delta">胆固醇 4.9 → 5.8</span><span class="delta">血压 125 → 145</span>
+            </div>
+            <div class="chain-node" data-chain style="right:0; top:168px; width:118px;">
+              <b>尿酸 · ALT</b><span>肾内 / 消化 · 观察</span><span class="delta">尿酸 380 → 480</span><span class="delta">ALT 32 → 56</span>
+            </div>
+            <div class="chain-node alone" style="right:6px; bottom:0; width:150px;">
+              <b>PSA 1.2 → 3.8</b><span>独立线索 · 与代谢链弱相关，单独排查（泌尿外科）</span>
+            </div>
+          </div>
+          <div class="hint"><b>点按任一节点</b>可联动高亮传导关系 · 虚线=独立线索</div>
+          <p class="say" style="margin-top:14px">这三项不是三件事——<b>体重是链条的起点</b>。血糖 7.2 已进入需确认区间（单次不等于确诊），胆固醇与血压跟随其后。<em>减重 5%–10%，多数指标会跟着回头</em>。</p>
+        </div>
+      </div>
+
+      <div class="ev-pane" id="ev-watch">
+        <div class="card ev-card">
+          <div class="card-title">观察区 · ALT / 尿酸 / 甲状腺<span class="chip-r chip teal">6 个月随访</span></div>
+          <div class="metric">
+            <div class="mbox">
+              <span class="m-label">ALT（谷丙转氨酶）</span>
+              <b class="m-val" style="color:var(--amber);font-size:21px">56</b><span class="m-unit">U/L</span>
+              <span class="m-ref2">参考范围 9 – 40 U/L</span>
+            </div>
+            <div class="mbox">
+              <span class="m-label">尿酸</span>
+              <b class="m-val" style="color:var(--amber);font-size:21px">480</b><span class="m-unit">μmol/L</span>
+              <span class="m-ref2">参考范围 &lt; 420 μmol/L</span>
+            </div>
+          </div>
+          <p class="say">这两项常和<b>饮酒、夜宵、高嘌呤</b>绑在一起，先记录两周饮食找诱因，6 个月复查加做肝胆彩超。甲状腺结节 TI-RADS 3 类<em>多数偏良性，三年没变化，按期随访就好</em>。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== Tab 计划 ========== -->
+    <section class="page" id="pg-plan">
+      <div class="app-head">
+        <div class="t">计划<small>本周执行 · 健康官帮你管到底</small></div>
+        <div class="chip red" style="align-self:center">第 1 周 · 排查期</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">本周任务 · 7月6日 – 7月12日<span class="chip-r chip grey">点击打卡</span></div>
+        <div class="week-top">
+          <div class="week-ring" id="wkRing"><b id="wkPct">0%</b><span>本周完成</span></div>
+          <div class="week-side">
+            <div class="wk-gain" id="wkGain">本周全部完成 → 健康分预计 66 → 72（估算）</div>
+            <div class="wk-streak" id="wkStreak">🔥 连续达标 0 周 · 本周进行中</div>
+          </div>
+        </div>
+
+        <div class="task" data-med="med1">
+          <div class="t-ic red">医</div>
+          <div class="t-main"><b>泌尿外科复查 · PSA / fPSA</b><span>截止 7-17 · 还剩 12 天 · 逾期提醒将升级</span></div>
+          <button class="t-btn s0" type="button">去预约</button>
+        </div>
+        <div class="task" data-med="med2">
+          <div class="t-ic red">医</div>
+          <div class="t-main"><b>晨尿 UACR + HbA1c</b><span>截止 7-17 · 可与上一项同一天完成 · 若结果仍异常将直接转肾内科（兜底已设定）</span></div>
+          <button class="t-btn s0" type="button">去预约</button>
+        </div>
+        <div class="task" data-habit="ex" data-goal="3">
+          <div class="t-ic teal">动</div>
+          <div class="t-main"><b>快走 / 骑行 40 分钟<span class="hdots"><i class="hdot"></i><i class="hdot"></i><i class="hdot"></i></span></b><span>本周 <b class="t-count" style="display:inline">0/3</b> · 建议周二 / 周四 / 周六 晚饭后</span></div>
+          <button class="t-btn s0" type="button">打卡 +1</button>
+        </div>
+        <div class="task" data-habit="weigh" data-goal="1">
+          <div class="t-ic blue">录</div>
+          <div class="t-main"><b>记录体重<span class="hdots"><i class="hdot"></i></span></b><span>本周 <b class="t-count" style="display:inline">0/1</b> · 固定周六早（同一体重秤、空腹）</span></div>
+          <button class="t-btn s0" type="button">打卡 +1</button>
+        </div>
+        <div class="qa-fold">
+          <button class="qa-btn" type="button">复查时问医生什么（已备好 3 问）<svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></button>
+          <ol class="qa-list">
+            <li>PSA 没超标但三年翻三倍，最常见的原因是什么？要警惕肿瘤吗？</li>
+            <li>尿蛋白 280 需要先排除哪些干扰因素？</li>
+            <li>血糖 7.2 算确诊吗？先减重能不能逆转？</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="card week-report">
+        <div class="card-title">一周后 · 自动生成周报<span class="chip-r chip teal">第 7 天发送</span></div>
+        <p class="say wk">许先生本周已建立 2 项复查安排，完成 2 次运动和 1 次体重记录。<b>红档问题仍以复查结果为准</b>；生活方式管理已经启动，<em>下周优先补齐 PSA/fPSA 与晨尿检查</em>。</p>
+        <div class="weekly-case">
+          <div class="weekly-title"><b>周报案例 · 第 1 周</b><span>生成时间：7月12日晚</span></div>
+          <div class="weekly-grid">
+            <div class="weekly-stat"><b>4/6</b><span>任务推进</span></div>
+            <div class="weekly-stat"><b>-0.6kg</b><span>体重变化</span></div>
+            <div class="weekly-stat"><b>2 项</b><span>待复查</span></div>
+          </div>
+          <div class="weekly-line">
+            <span class="chip teal">已做到</span>
+            <p><b>复查预约已建立</b>，运动开始形成节奏，体重记录完成一次。</p>
+          </div>
+          <div class="weekly-line">
+            <span class="chip red">待确认</span>
+            <p><b>PSA / fPSA 与晨尿 UACR</b> 仍是最高优先级，结果未出前不下结论。</p>
+          </div>
+          <div class="weekly-line">
+            <span class="chip amber">下周重点</span>
+            <p>先完成两项复查，再把运动频次补到每周 3 次；晚餐主食减半继续观察。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">路线图 · 14 / 90 / 180 天</div>
+        <div class="stage">
+          <div class="stage-dot"></div>
+          <h4>第 14 天 · 把问号变成答案<span class="chip red">当前阶段</span></h4>
+          <div class="gain">✓ 完成两项复查后：红档被"确认或排除"，不再悬着——这是本计划最重要的两周</div>
+        </div>
+        <div class="stage off">
+          <div class="stage-dot"></div>
+          <h4>第 90 天 · 让曲线掉头</h4>
+          <div class="gain">✓ 体重 -4kg + 复查血糖血脂血压：健康分预计 66 → 74（估算）</div>
+        </div>
+        <div class="stage off">
+          <div class="stage-dot"></div>
+          <h4>第 180 天 · 健康官复评</h4>
+          <div class="gain">✓ 全项复评、重新签发年度报告——明年开场片的主线将是"回落"而不是"累积"</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== Tab 档案 ========== -->
+    <section class="page" id="pg-archive">
+      <div class="app-head">
+        <div class="t">资料<small>报告库 · 数据来源</small></div>
+      </div>
+
+      <div class="card">
+        <div class="profile-card">
+          <div class="p-ava">许</div>
+          <div class="p-info"><b>许家佑</b><span>男 · 45 岁 · 178cm / 85kg · BMI 26.8</span></div>
+          <span class="chip amber">中风险 · 可逆</span>
+        </div>
+      </div>
+
+      <div class="card" style="padding:6px 16px;">
+        <div class="report-row"><span class="r-year">2026</span><span class="r-desc">年度联合解读 · 2 项红档 · 已签发</span><span class="chip teal">本期</span></div>
+        <div class="report-row"><span class="r-year">2025</span><span class="r-desc">年度报告 · 血糖越线提示复查（未执行）</span><span class="chip grey">已归档</span></div>
+        <div class="report-row"><span class="r-year">2024</span><span class="r-desc">年度报告 · 基本平稳</span><span class="chip grey">已归档</span></div>
+      </div>
+
+      <div class="card" style="margin-top:4px">
+        <div class="card-title">这份报告基于什么</div>
+        <div class="src-grid">
+          <div class="src-cell"><b>3</b><span>体检报告</span></div>
+          <div class="src-cell"><b>8</b><span>补充资料</span></div>
+          <div class="src-cell"><b>4</b><span>学科交叉</span></div>
+        </div>
+        <div style="margin-top:12px">
+          <div class="ref-row"><b>AUA/SUO 前列腺癌早期发现指南</b><span>美国泌尿外科学会 · 2023</span></div>
+          <div class="ref-row"><b>ADA 糖尿病诊疗标准</b><span>美国糖尿病协会 Standards of Care · 2026</span></div>
+          <div class="ref-row"><b>KDIGO 慢性肾脏病评估与管理指南</b><span>国际肾脏病组织 · 2024</span></div>
+          <div class="ref-row"><b>中国成人血脂异常防治指南</b><span>中华医学会 · 2023 修订</span></div>
+        </div>
+        <p class="legal">本报告由 AI 基于用户历史体检数据生成，不构成医疗诊断、治疗建议或用药指导；结论以执业医师面诊为准，如出现急性症状请立即就医。数据已做隐私保护处理。（本原型为演示版本，案例数据为虚构）</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- tabbar -->
+  <div class="tabbar">
+    <button class="tab on" data-pg="pg-verdict" type="button"><svg viewBox="0 0 24 24"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5z"/><path d="M9 12l2 2 4-4"/></svg>报告</button>
+    <button class="tab" data-pg="pg-evidence" type="button"><svg viewBox="0 0 24 24"><polyline points="3 17 9 11 13 14 21 6"/><polyline points="15 6 21 6 21 12"/></svg>证据</button>
+    <button class="tab" data-pg="pg-plan" type="button"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/><path d="M9 15l2 2 4-4"/></svg>计划</button>
+    <button class="tab" data-pg="pg-archive" type="button"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>资料</button>
+  </div>
+  <div class="home-bar"></div>
+</div></div>
+
+<script>
+/* ===== Tab ===== */
+const appBody = document.getElementById("appBody");
+function showPg(id){
+  document.querySelectorAll(".page").forEach(p => p.classList.toggle("on", p.id === id));
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.pg === id));
+  appBody.scrollTop = 0;
+}
+document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => showPg(t.dataset.pg)));
+function scrollAppBodyTo(el, offset = 0){
+  const bodyRect = appBody.getBoundingClientRect();
+  const elRect = el.getBoundingClientRect();
+  const top = appBody.scrollTop + elRect.top - bodyRect.top - offset;
+  appBody.scrollTo({ top: Math.max(0, top), behavior:"smooth" });
+}
+
+/* 证据页 · 指标 Tab 切换 */
+function showEvTab(id){
+  document.querySelectorAll(".ev-pane").forEach(p => p.classList.toggle("on", p.id === id));
+  document.querySelectorAll(".ev-tab").forEach(t => t.classList.toggle("on", t.dataset.ev === id));
+}
+document.querySelectorAll(".ev-tab").forEach(t => t.addEventListener("click", () => showEvTab(t.dataset.ev)));
+
+/* 风险行 → 证据页对应 Tab + 高亮 */
+document.querySelectorAll("[data-jump]").forEach(b => b.addEventListener("click", () => {
+  showPg("pg-evidence");
+  const id = b.dataset.jump;
+  const pane = document.getElementById(id);
+  if(!pane) return;
+  requestAnimationFrame(() => {
+    if(pane.classList.contains("ev-pane")){
+      showEvTab(id);
+      scrollAppBodyTo(document.getElementById("evTabs"), 8);
+      const card = pane.querySelector(".card") || pane;
+      card.classList.remove("flash"); void card.offsetWidth; card.classList.add("flash");
+    } else {
+      scrollAppBodyTo(pane, 8);
+      pane.classList.remove("flash"); void pane.offsetWidth; pane.classList.add("flash");
+    }
+  });
+}));
+
+/* 蓝档折叠 / 分歧面板 / 问医生 / 打卡 */
+document.getElementById("blueBtn").addEventListener("click", () => document.getElementById("blueZone").classList.toggle("blue-open"));
+document.getElementById("dispBtn").addEventListener("click", () => document.getElementById("disputeZone").classList.toggle("dispute-open"));
+document.querySelectorAll(".qa-btn").forEach(b => b.addEventListener("click", () => b.parentElement.classList.toggle("open")));
+document.querySelectorAll("[data-ck]").forEach(li => li.addEventListener("click", () => li.classList.toggle("done")));
+
+/* 传导链节点联动 */
+document.querySelectorAll("[data-chain]").forEach(n => n.addEventListener("click", () => {
+  const on = !n.classList.contains("hot");
+  document.querySelectorAll("[data-chain]").forEach(x => x.classList.remove("hot"));
+  if(on) document.querySelectorAll("[data-chain]").forEach(x => x.classList.add("hot"));
+}));
+
+/* ===== 本周执行：打卡 / 进度 / 动态提醒 ===== */
+const WK = { med1:0, med2:0, ex:0, weigh:0 };   /* med: 0未预约 1已预约 2已完成 */
+try{ Object.assign(WK, JSON.parse(localStorage.getItem("a2week") || "{}")); }catch(e){}
+const MED_LABEL = ["去预约", "已预约 ✓", "已完成 ✓"];
+function wkSave(){ try{ localStorage.setItem("a2week", JSON.stringify(WK)); }catch(e){} }
+function wkPct(){
+  let p = 0;
+  p += WK.med1 === 2 ? 1 : WK.med1 === 1 ? .5 : 0;
+  p += WK.med2 === 2 ? 1 : WK.med2 === 1 ? .5 : 0;
+  p += Math.min(WK.ex / 3, 1);
+  p += Math.min(WK.weigh, 1);
+  return p / 4;
+}
+function renderWeek(){
+  const pct = wkPct();
+  document.getElementById("wkPct").textContent = Math.round(pct * 100) + "%";
+  document.getElementById("wkRing").style.setProperty("--p", (pct * 100) + "%");
+  document.getElementById("wkGain").innerHTML =
+    pct >= 1 ? "✓ 本周全部完成 · 健康分预计 <b>66 → 72</b>（估算）"
+             : `按当前进度，健康分预计 <b>66 → ${(66 + pct * 6).toFixed(1)}</b> · 全部完成可到 72`;
+  document.getElementById("wkStreak").textContent =
+    pct >= 1 ? "🔥 本周达标！连续达标 1 周" : "🔥 连续达标 0 周 · 本周进行中";
+  document.querySelectorAll("[data-med]").forEach(row => {
+    const st = WK[row.dataset.med], btn = row.querySelector(".t-btn");
+    btn.textContent = MED_LABEL[st];
+    btn.className = "t-btn s" + st;
+  });
+  document.querySelectorAll("[data-habit]").forEach(row => {
+    const k = row.dataset.habit, goal = +row.dataset.goal, v = Math.min(WK[k], goal);
+    row.querySelector(".t-count").textContent = v + "/" + goal;
+    row.querySelectorAll(".hdot").forEach((d, i) => d.classList.toggle("on", i < v));
+    const btn = row.querySelector(".t-btn");
+    btn.textContent = v >= goal ? "已达标 ✓" : "打卡 +1";
+    btn.className = "t-btn " + (v >= goal ? "s2" : "s0");
+  });
+}
+document.querySelectorAll("[data-med]").forEach(row =>
+  row.querySelector(".t-btn").addEventListener("click", () => {
+    WK[row.dataset.med] = (WK[row.dataset.med] + 1) % 3;
+    wkSave(); renderWeek();
+  }));
+document.querySelectorAll("[data-habit]").forEach(row =>
+  row.querySelector(".t-btn").addEventListener("click", () => {
+    const goal = +row.dataset.goal;
+    WK[row.dataset.habit] = (WK[row.dataset.habit] + 1) % (goal + 1);
+    wkSave(); renderWeek();
+  }));
+document.querySelectorAll("[data-goplan]").forEach(b => b.addEventListener("click", () => showPg("pg-plan")));
+renderWeek();
+
+/* ===== 揭幕片 ===== */
+const intro = document.getElementById("intro");
+const steps = document.querySelectorAll("#isteps i");
+const nextBtn = document.getElementById("nextBtn");
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let timers = [];
+let curScene = 1;
+
+const FRAGS = [
+  {t:"血糖 5.4",  x:"24%", y:"22%", tx:"16%", ty:"58%", c:""},
+  {t:"PSA 1.2",   x:"66%", y:"16%", tx:"16%", ty:"73%", c:""},
+  {t:"血压 125",  x:"44%", y:"32%", tx:"16%", ty:"81%", c:""},
+  {t:"血糖 6.1",  x:"13%", y:"38%", tx:"50%", ty:"58%", c:"warn"},
+  {t:"PSA 2.2",   x:"80%", y:"42%", tx:"50%", ty:"73%", c:"warn"},
+  {t:"胆固醇 5.4",x:"14%", y:"67%", tx:"50%", ty:"81%", c:"warn"},
+  {t:"血糖 7.2",  x:"30%", y:"74%", tx:"84%", ty:"58%", c:"abn"},
+  {t:"PSA 3.8",   x:"72%", y:"70%", tx:"84%", ty:"73%", c:"abn"},
+  {t:"尿蛋白 280",x:"50%", y:"78%", tx:"84%", ty:"81%", c:"abn"}
+];
+document.getElementById("frags").innerHTML = FRAGS.map(f =>
+  `<span class="frag ${f.c}" style="--x:${f.x};--y:${f.y};--tx:${f.tx};--ty:${f.ty}">${f.t}</span>`).join("");
+
+function scene(n){
+  [1,2,3,4].forEach(i => document.getElementById("is"+i).classList.toggle("on", i === n));
+  steps.forEach((d,i) => d.classList.toggle("on", i === n-1));
+}
+function setStage(cls){
+  intro.classList.remove("st1","st2","st3","st4");
+  if(cls) intro.classList.add(cls);
+}
+function clearTimers(){ timers.forEach(clearTimeout); timers = []; }
+
+/* 幕1 · 你是谁 + 线索碎片浮现（手动点“下一步”推进） */
+function toScene1(){
+  curScene = 1; clearTimers();
+  document.querySelectorAll(".i-doc").forEach(d => d.classList.remove("lit","dim2"));
+  scene(1); setStage("");
+  requestAnimationFrame(() => intro.classList.add("st1"));
+  nextBtn.classList.remove("hidden");
+}
+/* 幕2 · 线索归档到时间线（手动点“下一步”推进） */
+function toScene2(){
+  curScene = 2; clearTimers();
+  scene(2); setStage("st2");
+  nextBtn.classList.remove("hidden");
+}
+/* 幕3 · 联合会诊（自动播放完 → 自动跳幕4） */
+function toScene3(){
+  curScene = 3; clearTimers();
+  scene(3); setStage("st3");
+  nextBtn.classList.add("hidden");
+  document.querySelectorAll(".i-doc").forEach(d => d.classList.remove("lit","dim2"));
+  document.getElementById("icenterSub").textContent = "正在听取 4 个学科的意见…";
+  if(reduced){ toScene4(); return; }
+  const T = (fn,ms) => timers.push(setTimeout(fn,ms));
+  const docs = ["idoc1","idoc2","idoc3","idoc4"];
+  docs.forEach((id,i) => T(() => {
+    docs.forEach((x,j) => {
+      const el = document.getElementById(x);
+      el.classList.toggle("lit", j === i);
+      el.classList.toggle("dim2", j < i);
+    });
+  }, 400 + i*1150));
+  T(() => document.getElementById("icenterSub").textContent = "意见汇总完成 · 正在复核分歧项…", 400 + 4*1150);
+  T(() => toScene4(), 400 + 4*1150 + 1200);       /* 幕3 → 幕4 自动跳转 */
+}
+/* 幕4 · 报告交付（停留等待点击“查看报告”） */
+function toScene4(){
+  curScene = 4; clearTimers();
+  scene(4); setStage("st4");
+  nextBtn.classList.add("hidden");
+}
+
+function playIntro(){
+  intro.classList.remove("hidden");
+  clearTimers();
+  if(reduced){ scene(4); setStage("st4"); nextBtn.classList.add("hidden"); return; }
+  toScene1();
+}
+function endIntro(){
+  clearTimers();
+  intro.classList.add("hidden");
+  try{ localStorage.setItem("a2introSeen","1"); }catch(e){}
+}
+nextBtn.addEventListener("click", () => {
+  if(curScene === 1) toScene2();
+  else if(curScene === 2) toScene3();
+});
+document.getElementById("skipBtn").addEventListener("click", endIntro);
+document.getElementById("enterBtn").addEventListener("click", endIntro);
+document.getElementById("replayBtn").addEventListener("click", playIntro);
+
+const forceIntro = (() => {
+  try{
+    const force = new URLSearchParams(location.search).get("intro") === "1";
+    if(force) history.replaceState(null, "", location.pathname + location.hash);
+    return force;
+  }catch(e){ return false; }
+})();
+let seen = false;
+try{ seen = localStorage.getItem("a2introSeen") === "1"; }catch(e){}
+forceIntro || !seen ? playIntro() : intro.classList.add("hidden");
+</script>
+</body>
+</html>

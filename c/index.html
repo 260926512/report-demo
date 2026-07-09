@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="icon" href="data:,">
+<title>身体地图（方案C · 可交互原型）</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-font-smoothing:antialiased; }
+:root{
+  --bg:#f5f6fc;
+  --panel:rgba(255,255,255,.72);
+  --panel2:rgba(255,255,255,.88);
+  --line:rgba(50,55,110,.13);
+  --txt:#1c1e3a;
+  --txt2:rgba(28,30,58,.66);
+  --txt3:rgba(28,30,58,.42);
+  --violet:#6d5bd0;
+  --blue:#2f6fd6;
+  --amber:#b7791f;
+  --red:#d24a43;
+  --green:#239b62;
+  --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif;
+}
+html,body{ height:100%; }
+body{
+  display:grid; place-items:center; padding:24px 12px; overflow:hidden;
+  background:
+    radial-gradient(700px 500px at 20% 0%, rgba(109,91,208,.10), transparent 60%),
+    radial-gradient(700px 450px at 85% 100%, rgba(47,111,214,.08), transparent 60%),
+    linear-gradient(180deg,#f8f8fd,#e9ebf7);
+  color:var(--txt); font-family:var(--sans);
+}
+button{ border:0; background:none; font:inherit; color:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+
+.phone{ width:min(390px,calc(100vw - 20px)); height:min(844px,calc(100dvh - 32px)); min-height:700px;
+  background:linear-gradient(145deg,#ffffff,#cfd2e6); border-radius:56px; padding:9px; position:relative;
+  box-shadow:0 0 0 1px rgba(255,255,255,.9), 0 30px 70px -28px rgba(50,55,110,.35); }
+.screen{ width:100%; height:100%; border-radius:47px; overflow:hidden; background:var(--bg); position:relative; display:flex; flex-direction:column; }
+.island{ position:absolute; top:20px; left:50%; transform:translateX(-50%); width:118px; height:34px; background:#000; border-radius:20px; z-index:60; }
+.statusbar{ height:60px; flex-shrink:0; display:flex; align-items:flex-end; justify-content:space-between; padding:0 32px 8px; font-size:14px; font-weight:600; position:relative; z-index:5; }
+.home-bar{ position:absolute; bottom:8px; left:50%; transform:translateX(-50%); width:134px; height:5px; border-radius:3px; background:rgba(28,30,58,.22); z-index:60; }
+.chip{ font-size:9.5px; font-weight:700; padding:3px 9px; border-radius:99px; letter-spacing:1px; }
+.chip.red{ color:var(--red); background:rgba(210,74,67,.12); }
+.chip.amber{ color:var(--amber); background:rgba(183,121,31,.13); }
+.chip.blue{ color:var(--blue); background:rgba(47,111,214,.11); }
+.chip.green{ color:var(--green); background:rgba(35,155,98,.13); }
+.chip.grey{ color:var(--txt2); background:rgba(28,30,58,.06); }
+
+/* ===== 主屏 ===== */
+.main{ flex:1; position:relative; z-index:5; display:flex; flex-direction:column; padding:0 18px 108px; min-height:0; }
+.head{ display:flex; align-items:center; justify-content:space-between; padding:8px 2px 6px; }
+.head .t{ font-size:21px; font-weight:800; letter-spacing:1px; }
+.head .t small{ display:block; font-size:10.5px; font-weight:400; color:var(--txt3); letter-spacing:2px; margin-top:3px; }
+.replay{ font-size:11px; color:var(--violet); background:rgba(109,91,208,.12); border-radius:99px; padding:0 13px; min-height:44px; letter-spacing:1px; font-weight:600; }
+
+.years{ display:flex; gap:6px; padding:5px; border-radius:99px; background:var(--panel); border:1px solid var(--line); margin:6px 0 4px; }
+.yr{ flex:1; min-height:44px; border-radius:99px; font-size:13px; font-weight:700; letter-spacing:1px; color:var(--txt3); font-variant-numeric:tabular-nums; }
+.yr.on{ color:#fff; background:linear-gradient(90deg,#6d5bd0,#2f6fd6); box-shadow:0 6px 18px -6px rgba(109,91,208,.55); }
+.yr-cap{ text-align:center; font-size:10.5px; color:var(--txt2); letter-spacing:1px; min-height:16px; margin-top:5px; }
+.yr-cap b{ color:var(--amber); }
+.cert-line{ display:flex; align-items:center; justify-content:center; gap:6px; margin-top:5px; font-size:9.5px; letter-spacing:1px; color:var(--txt3); }
+.cert-line svg{ width:12px; height:12px; stroke:var(--violet); fill:none; stroke-width:2; }
+.cert-line b{ color:var(--violet); font-weight:700; }
+
+/* ===== 伪3D 旋转人模 ===== */
+.stage{ flex:1; position:relative; min-height:0; perspective:1000px; touch-action:pan-y; }
+.bview{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  transition:transform .5s cubic-bezier(.3,.7,.3,1), opacity .4s ease; opacity:0; pointer-events:none; transform:rotateY(90deg) scale(.92); }
+.bview.on{ opacity:1; pointer-events:auto; transform:none; }
+.bview.hidl{ transform:rotateY(-90deg) scale(.92); }
+.body-wrap{ position:relative; height:100%; max-height:400px; aspect-ratio:120/230; }
+.body-svg{ width:100%; height:100%; filter:drop-shadow(0 0 26px rgba(109,91,208,.22)); overflow:visible; }
+.organ{ cursor:pointer; }
+.organ .oshape{ transition:fill .4s; animation:opulse var(--spd,2.6s) ease-in-out infinite; transform-box:fill-box; transform-origin:center; }
+@keyframes opulse{ 0%,100%{ opacity:.95; transform:scale(1);} 50%{ opacity:.55; transform:scale(.9);} }
+.organ .ghit{ fill:transparent; }
+.organ .gring{ fill:none; stroke-width:2; stroke-dasharray:4 4; opacity:0; transition:opacity .3s; }
+.compare .organ .gring{ opacity:.9; }
+.olbl{ position:absolute; transform:translateY(-50%); white-space:nowrap; font-size:10px; font-weight:700; letter-spacing:1px; color:var(--txt2);
+  background:rgba(255,255,255,.88); padding:5px 9px; border-radius:99px; border:1px solid var(--line); backdrop-filter:blur(8px); cursor:pointer; min-height:26px; }
+.olbl::after{ content:""; position:absolute; top:50%; width:14px; height:1.5px; background:rgba(50,55,110,.3); }
+.olbl.l{ }  .olbl.l::after{ left:100%; }
+.olbl.r{ }  .olbl.r::after{ right:100%; }
+/* 旋转控制 */
+.rot-bar{ display:flex; align-items:center; justify-content:center; gap:10px; padding:2px 0 4px; }
+.rot-btn{ width:44px; height:44px; border-radius:50%; display:grid; place-items:center; background:var(--panel2); border:1px solid var(--line); font-size:17px; color:var(--violet); }
+.rot-view{ min-width:118px; text-align:center; }
+.rot-view b{ display:block; font-size:12.5px; letter-spacing:2px; }
+.rot-view span{ display:block; margin-top:3px; font-size:9px; color:var(--txt3); letter-spacing:1px; }
+.rot-pips{ display:flex; justify-content:center; gap:5px; margin-top:4px; }
+.rot-pips i{ width:6px; height:6px; border-radius:50%; background:rgba(28,30,58,.15); }
+.rot-pips i.on{ background:var(--violet); }
+/* ===== 全息人体（Canvas 网格线框 · 真 3D 旋转） ===== */
+.stage canvas{ position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:pan-y; }
+.floorS{ position:absolute; left:50%; bottom:4%; width:190px; height:36px; transform:translateX(-50%); border-radius:50%;
+  background:radial-gradient(ellipse, rgba(109,91,208,.24), transparent 65%); pointer-events:none; }
+.marks{ position:absolute; inset:0; pointer-events:none; }
+.omark{ position:absolute; left:0; top:0; width:44px; height:44px; display:grid; place-items:center; pointer-events:auto; transform:translate(-50%,-50%); }
+.od{ width:15px; height:15px; border-radius:50%; animation:opulse2 2.6s ease-in-out infinite; }
+@keyframes opulse2{ 0%,100%{ transform:scale(1); opacity:1;} 50%{ transform:scale(.8); opacity:.6;} }
+.omark .gring{ position:absolute; inset:7px; border-radius:50%; border:2px dashed transparent; opacity:0; transition:opacity .3s; }
+.compare .omark .gring{ opacity:.95; }
+.ol{ position:absolute; top:50%; left:calc(100% + 3px); transform:translateY(-50%); white-space:nowrap;
+  font-size:9px; font-weight:700; letter-spacing:1px; color:var(--txt2);
+  background:rgba(255,255,255,.88); border:1px solid var(--line); border-radius:99px; padding:3px 8px; }
+.ol.lft{ left:auto; right:calc(100% + 3px); }
+.legend{ display:flex; justify-content:center; gap:13px; padding:2px 0; }
+.legend span{ display:flex; align-items:center; gap:5px; font-size:9.5px; color:var(--txt3); letter-spacing:1px; }
+.legend i{ width:8px; height:8px; border-radius:50%; }
+
+/* ===== 底部操作 ===== */
+.ops{ position:absolute; bottom:0; left:0; right:0; z-index:50; height:88px; padding:10px 14px 24px;
+  background:rgba(255,255,255,.85); backdrop-filter:blur(28px); border-top:1px solid var(--line); display:flex; gap:9px; }
+.op{ flex:1; border-radius:16px; font-size:12px; font-weight:700; letter-spacing:2px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; color:var(--txt2); background:var(--panel2); border:1px solid var(--line); }
+.op small{ font-size:8.5px; font-weight:400; color:var(--txt3); letter-spacing:1px; }
+.op.active{ color:var(--violet); border-color:rgba(109,91,208,.5); }
+
+/* ===== 下钻面板 ===== */
+.sheet{ position:absolute; left:8px; right:8px; bottom:96px; z-index:55; border-radius:24px; padding:16px;
+  background:rgba(255,255,255,.96); border:1px solid rgba(109,91,208,.32); backdrop-filter:blur(24px);
+  transform:translateY(24px); opacity:0; pointer-events:none; transition:all .3s cubic-bezier(.2,.8,.2,1);
+  box-shadow:0 -14px 44px rgba(50,55,110,.22); max-height:calc(100% - 200px); display:flex; flex-direction:column; }
+.sheet-body{ overflow-y:auto; margin:0 -6px; padding:0 6px 2px; scrollbar-width:none; }
+.sheet-body::-webkit-scrollbar{ display:none; }
+.sec-t{ font-size:10px; font-weight:800; letter-spacing:2px; color:var(--violet); margin:11px 0 7px; }
+.ind{ padding:10px 12px; border-radius:13px; background:rgba(28,30,58,.04); border:1px solid var(--line); }
+.ind + .ind{ margin-top:7px; }
+.ind-top{ display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+.ind-top b{ font-size:12px; }
+.ind-top span{ font-size:9.5px; color:var(--txt3); font-weight:650; white-space:nowrap; }
+.ind-vals{ display:flex; align-items:flex-end; gap:8px; margin-top:8px; }
+.iv{ display:flex; flex-direction:column; align-items:center; gap:1px; }
+.iv em{ font-style:normal; font-size:8.5px; color:var(--txt3); }
+.iv b{ font-size:14px; font-variant-numeric:tabular-nums; }
+.iv.hot b{ font-size:17px; }
+.arr{ color:var(--txt3); font-style:normal; font-size:10px; padding-bottom:3px; }
+.ind-note{ margin-top:6px; font-size:9px; color:var(--txt3); }
+.exp{ display:flex; gap:8px; padding:6px 0; align-items:flex-start; }
+.exp > b{ flex-shrink:0; font-size:9.5px; color:var(--blue); border:1px solid rgba(47,111,214,.35); border-radius:99px; padding:3px 8px; letter-spacing:.5px; margin-top:1px; white-space:nowrap; }
+.exp p{ font-size:11.5px; line-height:1.7; color:var(--txt2); }
+.sum-box{ margin-top:7px; padding:10px 12px; border-radius:13px; font-size:12px; line-height:1.75; font-weight:600;
+  background:rgba(109,91,208,.08); border-left:3px solid var(--violet); }
+.sum-box::before{ content:"综合评估"; display:block; font-size:8.5px; letter-spacing:2px; color:var(--violet); margin-bottom:4px; font-weight:800; }
+.act-li{ display:flex; gap:9px; padding:6px 0; align-items:flex-start; }
+.act-li span{ width:20px; height:20px; border-radius:50%; flex-shrink:0; display:grid; place-items:center; font-size:10.5px; font-weight:800; color:#fff; background:var(--blue); margin-top:1px; }
+.act-li p{ font-size:11.5px; line-height:1.7; color:var(--txt2); }
+.act-li p b{ color:var(--txt); }
+.sh-nav{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding-top:10px; margin-top:6px; border-top:1px solid var(--line); }
+.sh-next{ min-height:44px; padding:0 18px; border-radius:99px; color:#fff; font-size:12px; font-weight:750; letter-spacing:1px;
+  background:linear-gradient(90deg,#6d5bd0,#2f6fd6); box-shadow:0 8px 20px -8px rgba(109,91,208,.55); }
+/* 风险清单 */
+.rlist{ position:absolute; inset:0; z-index:60; background:rgba(238,240,250,.75); backdrop-filter:blur(10px); opacity:0; pointer-events:none; transition:opacity .3s; }
+.rlist.on{ opacity:1; pointer-events:auto; }
+.rl-card{ position:absolute; left:8px; right:8px; bottom:96px; border-radius:24px; padding:12px 16px 8px;
+  background:rgba(255,255,255,.97); border:1px solid rgba(109,91,208,.32); box-shadow:0 -14px 44px rgba(50,55,110,.22); }
+.rl-head{ display:flex; align-items:center; justify-content:space-between; }
+.rl-head b{ font-size:14px; letter-spacing:1px; }
+.rl-row{ display:flex; align-items:center; gap:10px; width:100%; padding:10px 2px; text-align:left; min-height:48px; }
+.rl-row + .rl-row{ border-top:1px solid var(--line); }
+.rl-row .rd{ width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.rl-row .rt{ flex:1; min-width:0; }
+.rl-row .rt b{ display:block; font-size:12.5px; }
+.rl-row .rt span{ display:block; font-size:10px; color:var(--txt3); margin-top:2px; }
+.rl-row .arr2{ color:var(--txt3); font-size:13px; }
+.sheet.on{ transform:none; opacity:1; pointer-events:auto; }
+.sheet-head{ display:flex; align-items:center; gap:9px; margin-bottom:9px; }
+.sheet-head b{ font-size:15.5px; letter-spacing:1px; flex:1; }
+.sheet-close{ width:44px; height:44px; margin:-8px -8px -8px 0; border-radius:50%; color:var(--txt2); font-size:15px; }
+.sheet .dept{ font-size:9.5px; color:var(--violet); letter-spacing:1px; border:1px solid rgba(109,91,208,.4); border-radius:99px; padding:2px 8px; }
+.sheet .metrics{ display:flex; flex-wrap:wrap; gap:6px; margin:8px 0 10px; }
+.sheet .m{ font-size:10.5px; font-weight:700; font-variant-numeric:tabular-nums; padding:5px 9px; border-radius:9px; background:rgba(28,30,58,.05); border:1px solid var(--line); color:var(--txt2); }
+.sheet .m b{ color:var(--mcolor,var(--txt)); }
+.sheet .verdict{ font-size:13px; line-height:1.8; }
+.sheet .verdict em{ font-style:normal; color:var(--green); font-weight:700; }
+.sheet .verdict b{ color:var(--amber); }
+.sheet .act{ display:flex; gap:8px; align-items:center; margin-top:10px; padding:9px 12px; border-radius:13px;
+  background:rgba(47,111,214,.08); border:1px solid rgba(47,111,214,.28); font-size:11.5px; font-weight:600; color:var(--blue); }
+.sheet .ref{ margin-top:8px; font-size:9.5px; color:var(--txt3); letter-spacing:.5px; display:flex; align-items:center; gap:6px; }
+.sheet .ref::before{ content:"依据"; flex-shrink:0; font-size:8.5px; color:var(--violet); border:1px solid rgba(109,91,208,.4); border-radius:99px; padding:1px 7px; letter-spacing:1px; }
+
+/* ===== 全身结论 ===== */
+.summary{ position:absolute; inset:0; z-index:70; display:flex; align-items:center; justify-content:center; padding:26px;
+  background:rgba(238,240,250,.88); backdrop-filter:blur(16px); opacity:0; pointer-events:none; transition:opacity .35s; }
+.summary.on{ opacity:1; pointer-events:auto; }
+.sum-card{ width:100%; border-radius:26px; padding:22px 18px; background:rgba(255,255,255,.96); border:1px solid rgba(109,91,208,.32); box-shadow:0 20px 50px rgba(50,55,110,.2); }
+.sum-card h2{ font-size:16px; letter-spacing:1px; margin-bottom:10px; }
+.sum-card .verdict{ font-size:13.5px; line-height:1.95; color:var(--txt2); }
+.sum-card .verdict b{ color:var(--red); } .sum-card .verdict em{ font-style:normal; color:var(--green); font-weight:700; }
+.sum-kpis{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:12px 0; }
+.sum-kpi{ padding:10px 6px; border-radius:14px; background:rgba(109,91,208,.08); border:1px solid rgba(109,91,208,.18); text-align:center; }
+.sum-kpi b{ display:block; font-size:15px; font-weight:800; color:var(--violet); }
+.sum-kpi span{ display:block; margin-top:3px; font-size:9px; color:var(--txt3); letter-spacing:.5px; }
+.sum-three{ margin:13px 0; }
+.sum-three .row{ display:flex; gap:10px; align-items:center; padding:9px 0; border-top:1px solid var(--line); font-size:12px; color:var(--txt2); }
+.sum-three .row .n{ width:24px; height:24px; border-radius:50%; flex-shrink:0; display:grid; place-items:center; font-size:11px; font-weight:800; color:#fff; background:var(--violet); }
+.sum-three .row b{ color:var(--txt); }
+.dist-track{ position:relative; height:11px; border-radius:8px; margin:20px 2px 6px;
+  background:linear-gradient(90deg, rgba(35,155,98,.75), rgba(183,121,31,.75) 55%, rgba(210,74,67,.8)); }
+.dist-marker{ position:absolute; left:60%; top:-7px; transform:translateX(-50%); width:4px; height:25px; border-radius:3px; background:var(--txt); box-shadow:0 0 0 3px rgba(255,255,255,.9); }
+.dist-scale{ display:flex; justify-content:space-between; font-size:8.5px; color:var(--txt3); }
+.sum-close{ width:100%; min-height:44px; margin-top:14px; border-radius:14px; font-size:13px; font-weight:800; letter-spacing:2px; color:#fff; background:linear-gradient(90deg,#6d5bd0,#2f6fd6); }
+.sum-card .legal{ font-size:9px; color:var(--txt3); text-align:center; margin-top:10px; letter-spacing:.5px; }
+
+/* ===== 揭幕片「体内漫游」 ===== */
+.intro{ position:absolute; inset:0; z-index:100; overflow:hidden; display:flex; align-items:center; justify-content:center;
+  background:radial-gradient(80% 60% at 50% 20%, rgba(109,91,208,.13), transparent 62%), linear-gradient(180deg,#f8f8fd,#eaecf8);
+  color:var(--txt); }
+.intro.hidden{ display:none; }
+.intro.fin .intro-skip{ display:none; }
+.intro-skip{ position:absolute; top:24px; right:20px; z-index:30; min-height:44px; padding:0 18px; border-radius:99px;
+  color:var(--txt2); font-size:12px; letter-spacing:2px; background:rgba(255,255,255,.8); border:1px solid var(--line); }
+.iscene{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:30px; opacity:0; pointer-events:none; transition:opacity .7s ease; }
+.iscene.on{ opacity:1; pointer-events:auto; }
+.iscene .inner{ text-align:center; max-width:320px; position:relative; z-index:3; }
+.i-name{ font-size:31px; font-weight:800; letter-spacing:3px; }
+.i-sub{ font-size:12.5px; color:var(--txt2); letter-spacing:1px; margin-top:10px; line-height:1.8; }
+.i-line{ font-size:17.5px; line-height:2; font-weight:700; }
+.i-line em{ font-style:normal; color:var(--violet); }
+.stars{ position:absolute; inset:0; z-index:1; transition:transform 3.5s ease; }
+.iscene.zooming .stars{ transform:scale(.32); }
+.star{ position:absolute; width:var(--s); height:var(--s); border-radius:50%; background:var(--c);
+  left:var(--x); top:var(--y); box-shadow:0 0 10px var(--c); animation:tw var(--d) ease-in-out infinite; }
+@keyframes tw{ 0%,100%{ opacity:.9;} 50%{ opacity:.15;} }
+.i-body{ width:158px; height:286px; margin:0 auto 14px; position:relative; display:grid; place-items:center;
+  filter:drop-shadow(0 0 26px rgba(89,101,220,.34)); opacity:0; transform:scale(.85); transition:all .9s ease; }
+.i-body-model,.i-body-fallback{ grid-area:1/1; max-width:100%; max-height:100%; }
+.i-body-model{ width:100%; height:100%; object-fit:contain; opacity:0; transition:opacity .35s ease; }
+.i-body-model.ready{ opacity:1; }
+.i-body-fallback{ width:130px; transition:opacity .25s ease; }
+.i-body.has-model .i-body-fallback{ opacity:0; }
+.i-body-dot{ position:absolute; left:var(--x); top:var(--y); z-index:3; width:13px; height:13px; border-radius:50%;
+  transform:translate(-50%,-50%); opacity:0; box-shadow:0 0 16px color-mix(in srgb, var(--c) 70%, transparent); background:var(--c);
+  transition:opacity .25s ease; }
+.i-body-dot.red{ width:15px; height:15px; }
+.i-body.has-model .i-body-dot{ opacity:.96; }
+.iscene.on .i-body{ opacity:1; transform:none; }
+.i-enter{ margin-top:20px; min-height:46px; padding:0 32px; border-radius:99px; color:#fff; font-size:14px; font-weight:800; letter-spacing:2px;
+  background:linear-gradient(90deg,#6d5bd0,#2f6fd6); box-shadow:0 14px 34px rgba(50,55,110,.3); }
+.i-steps{ position:absolute; bottom:26px; left:0; right:0; display:flex; justify-content:center; gap:8px; }
+.i-steps i{ width:7px; height:7px; border-radius:50%; background:rgba(28,30,58,.18); }
+.i-steps i.on{ background:var(--violet); box-shadow:0 0 8px rgba(109,91,208,.6); }
+.launch-fallback{ width:min(310px,calc(100vw - 48px)); text-align:center; padding:28px 22px; border-radius:22px;
+  background:rgba(255,255,255,.86); border:1px solid rgba(109,91,208,.22); box-shadow:0 24px 60px rgba(50,55,110,.16); }
+.launch-fallback b{ display:block; font-size:17px; letter-spacing:1px; margin-bottom:10px; }
+.launch-fallback p{ font-size:12.5px; line-height:1.8; color:var(--txt2); }
+.launch-fallback code{ display:inline-block; margin-top:12px; padding:8px 11px; border-radius:10px; background:rgba(47,111,214,.08); color:var(--blue); font-size:12px; }
+
+@media (max-width:700px){
+  body{ display:block; padding:0; }
+  .phone{ width:100%; height:100dvh; min-height:100dvh; padding:0; border-radius:0; background:transparent; box-shadow:none; }
+  .screen,.intro{ border-radius:0; }
+}
+@media (prefers-reduced-motion: reduce){ *,*::before,*::after{ animation:none !important; transition:none !important; } }
+</style>
+<script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three.module.js"
+    }
+  }
+</script>
+</head>
+<body>
+
+<a href="../index.html" aria-label="返回方案列表" style="position:fixed;top:12px;left:12px;z-index:99999;display:inline-flex;align-items:center;gap:4px;min-height:36px;padding:0 14px;border-radius:99px;font:600 13px/1 -apple-system,'PingFang SC',sans-serif;color:#0f9488;text-decoration:none;background:rgba(255,255,255,.86);border:1px solid rgba(28,46,70,.14);box-shadow:0 4px 14px rgba(28,46,70,.16);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)">‹ 首页</a>
+
+<div class="phone"><div class="screen">
+  <div class="island"></div>
+
+  <!-- ============ 揭幕片「体内漫游」 ============ -->
+  <div class="intro" id="intro">
+    <button class="intro-skip" id="skipBtn" type="button">跳过</button>
+    <div class="iscene on" id="is1">
+      <div class="inner">
+        <p class="i-name">许家佑</p>
+        <p class="i-sub">男 · 45 岁<br>2024 – 2026 ｜ 这是你的身体，从里面看</p>
+      </div>
+    </div>
+    <div class="iscene" id="is2">
+      <div class="stars" id="stars"></div>
+      <div class="inner">
+        <p class="i-line">你的身体每天产生<br><em>数百万个信号</em>，<br>体检留下了几百个。</p>
+      </div>
+    </div>
+    <div class="iscene" id="is3">
+      <div class="inner">
+        <div class="i-body" id="introBodyFrame" aria-hidden="true">
+          <img class="i-body-model" id="introBodyModel" alt="">
+          <svg class="i-body-fallback" viewBox="0 0 120 230">
+            <path d="M60 12a13 13 0 1 1 0 26 13 13 0 0 1 0-26Zm-16 30h32c10 0 17 8 17 18l4 50h-10l-5-38v110l-7 36h-10l-3-66h-4l-3 66H45l-7-36V72l-5 38H23l4-50c0-10 7-18 17-18Z" fill="rgba(109,91,208,.14)" stroke="rgba(109,91,208,.45)" stroke-width="1.5"/>
+            <circle cx="60" cy="46" r="5" fill="#2f6fd6"/><circle cx="66" cy="84" r="5" fill="#d97706"/><circle cx="52" cy="100" r="5" fill="#2f6fd6"/><circle cx="60" cy="112" r="5" fill="#d97706"/><circle cx="60" cy="136" r="6" fill="#d24a43"/>
+          </svg>
+          <span class="i-body-dot" style="--x:52%;--y:18%;--c:#2f6fd6"></span>
+          <span class="i-body-dot" style="--x:55%;--y:39%;--c:#d97706"></span>
+          <span class="i-body-dot" style="--x:43%;--y:48%;--c:#2f6fd6"></span>
+          <span class="i-body-dot" style="--x:52%;--y:56%;--c:#d97706"></span>
+          <span class="i-body-dot red" style="--x:52%;--y:68%;--c:#d24a43"></span>
+        </div>
+        <p class="i-line" style="font-size:15.5px">信号已点亮。<em>进入身体地图查看。</em></p>
+        <p class="i-sub" style="margin-top:14px">评估模型 · 三甲医院联合顾问团审定</p>
+        <button class="i-enter" id="enterBtn" type="button">进入你的身体</button>
+      </div>
+    </div>
+    <div class="i-steps" id="isteps"><i class="on"></i><i></i><i></i></div>
+  </div>
+
+  <!-- ============ 主屏 ============ -->
+  <div class="statusbar"><span>9:41</span><span style="font-size:11.5px;color:var(--txt2)">5G ▮▮▮▯ ▐▐</span></div>
+
+  <div class="main">
+    <div class="head">
+      <div class="t">身体地图<small>BODY MAP · 风险长在哪个器官</small></div>
+      <button class="replay" id="replayBtn" type="button">▶ 开场</button>
+    </div>
+
+    <div class="years" id="years">
+      <button class="yr" data-y="2024" type="button">2024</button>
+      <button class="yr" data-y="2025" type="button">2025</button>
+      <button class="yr on" data-y="2026" type="button">2026</button>
+    </div>
+    <p class="yr-cap" id="yrCap"><b>2026</b>：两处红灯 · 转到背面看看你的肾</p>
+    <div class="cert-line">
+      <svg viewBox="0 0 24 24"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5z"/><path d="M9 12l2 2 4-4"/></svg>
+      评估模型 · <b>三甲医院联合顾问团审定</b> · 依据 5 部临床指南
+    </div>
+
+    <div class="stage" id="stage">
+      <canvas id="bodyCv"></canvas>
+      <i class="floorS"></i>
+      <div class="marks" id="marks"></div>
+    </div>
+
+    <div class="rot-bar">
+      <button class="rot-btn" id="rotL" type="button" aria-label="向左旋转">⟲</button>
+      <div class="rot-view">
+        <b id="viewName">正 面</b>
+        <span>像地球仪一样拖动 · 松手带惯性</span>
+      </div>
+      <button class="rot-btn" id="rotR" type="button" aria-label="向右旋转">⟳</button>
+    </div>
+
+    <div class="legend">
+      <span><i style="background:var(--red)"></i>优先处理</span>
+      <span><i style="background:var(--amber)"></i>需要管理</span>
+      <span><i style="background:var(--blue)"></i>保持观察</span>
+      <span><i style="background:var(--green)"></i>正常</span>
+    </div>
+  </div>
+
+  <!-- 下钻面板 -->
+  <div class="sheet" id="sheet">
+    <div class="sheet-head">
+      <b id="shName">—</b>
+      <span class="dept" id="shDept">—</span>
+      <button class="sheet-close" id="shClose" type="button">✕</button>
+    </div>
+    <div class="sheet-body" id="shBody"></div>
+    <div class="sh-nav">
+      <span class="caption" id="shStep" style="font-size:10px;color:var(--txt3);letter-spacing:1px">问题 1 / 6</span>
+      <button class="sh-next" id="shNext" type="button">下一个问题 →</button>
+    </div>
+  </div>
+
+  <!-- 全身结论 -->
+  <div class="summary" id="summary">
+    <div class="sum-card">
+      <h2>🩺 三年全身报告结论</h2>
+      <p class="verdict">许先生，2024–2026 三年全身变化已经连起来看过：未见急危信号，但身体风险正在从<b>代谢链</b>向前列腺、肾脏、心血管三处外溢。最关键的主线不是某一个指标异常，而是<b>体重上行带动血糖、血脂、血压同步变差</b>；同时 PSA 升速和尿蛋白需要尽快复查，把不确定先关掉。<em>现在仍处在可干预窗口。</em></p>
+      <div class="sum-kpis">
+        <div class="sum-kpi"><b>3 年</b><span>2024–2026 连续追踪</span></div>
+        <div class="sum-kpi"><b>6 处</b><span>全身器官定位</span></div>
+        <div class="sum-kpi"><b>2 红</b><span>需优先复查确认</span></div>
+      </div>
+      <div class="sum-three">
+        <div class="row" style="border-top:0"><span class="n">1</span><p><b>优先复查</b> · 1–2 周内完成 PSA / fPSA 与晨尿 UACR，先处理前列腺和肾脏两处红灯。</p></div>
+        <div class="row"><span class="n">2</span><p><b>确认代谢档位</b> · 同周补 HbA1c，判断血糖是短期波动还是已经进入糖代谢异常。</p></div>
+        <div class="row"><span class="n">3</span><p><b>改变全身主线</b> · 今天启动 90 天减重，优先拉回血糖、血脂、血压这条共同链路。</p></div>
+      </div>
+      <div class="dist-track"><div class="dist-marker"></div></div>
+      <div class="dist-scale"><span>健康</span><span>临界</span><span>疾病</span></div>
+      <p style="text-align:center;font-size:10px;color:var(--violet);letter-spacing:1px;margin-top:12px">🛡 三甲医院联合顾问团审定 · 依据 5 部临床指南</p>
+      <button class="sum-close" id="sumClose" type="button">回到地图</button>
+      <p class="legal">演示原型 · 虚构案例 · 不构成医疗诊断，结论以医师面诊为准</p>
+    </div>
+  </div>
+
+  <!-- 底部操作 -->
+  <div class="ops">
+    <button class="op" id="locateBtn" type="button">风险定位<small>按缓急排序 · 逐个看</small></button>
+    <button class="op" id="sumBtn" type="button">三年报告<small>全身结论</small></button>
+  </div>
+
+  <!-- 风险清单 -->
+  <div class="rlist" id="rlist">
+    <div class="rl-card">
+      <div class="rl-head"><b>风险定位 · 按缓急排序</b><button class="sheet-close" id="rlClose" type="button">✕</button></div>
+      <div id="rlRows"></div>
+    </div>
+  </div>
+  <div class="home-bar"></div>
+</div></div>
+
+<script>
+window.__bodyMapModuleStarted = false;
+window.addEventListener("DOMContentLoaded", () => {
+  setTimeout(() => {
+    if(window.__bodyMapModuleStarted) return;
+    const intro = document.getElementById("intro");
+    if(!intro) return;
+    const fileMode = location.protocol === "file:";
+    intro.className = "intro";
+    intro.innerHTML = `<div class="launch-fallback">
+      <b>${fileMode ? "请用启动脚本打开" : "页面资源没有加载完整"}</b>
+      <p>${fileMode ? "这个原型包含 3D 人模，直接双击 HTML 会导致脚本和模型无法加载。" : "请确认 assets 和 vendor 文件夹与 index-mockup.html 在同一个目录，并重新启动本地服务。"}</p>
+      <code>${fileMode ? "双击 start-mac.command" : "刷新页面或重新运行 start-mac.command"}</code>
+    </div>`;
+  }, 6000);
+});
+</script>
+<script type="module">
+import * as THREE from "./vendor/three.module.js";
+import { GLTFLoader } from "./vendor/loaders/GLTFLoader.js";
+window.__bodyMapModuleStarted = true;
+
+/* ===== 数据：器官 × 年份 ===== */
+const C = { red:"#d24a43", amber:"#b7791f", blue:"#2f6fd6", green:"#239b62" };
+const BODY_MODEL_URL = "./assets/models/male_body_base_mesh_highpoly.glb";
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+const ORGANS = {
+  thyroid:{ name:"甲状腺", dept:"甲状腺专科", ref:"ACR TI-RADS 分类标准 · 2017", view:0,
+    tier:{2024:"green",2025:"blue",2026:"blue"},
+    inds:[{ n:"甲状腺结节 TI-RADS", ref:"1–2 类多为良性", vals:["未查","3 类","3 类"], c:"blue", note:"2025 年首检，三年大小 / 边界 / 血流均无变化" }],
+    experts:[{ w:"甲状腺专科", t:"3 类结节恶性概率通常低于 5%，且随访无任何变化，暂无穿刺指征。" }],
+    summary:"偏良性、无进展，按期随访即可——不需要为它焦虑。",
+    acts:["<b>6 个月后复查甲状腺超声</b>，重点对比大小、边界、钙化与血流","无需用药与特殊饮食干预"] },
+  heart:{ name:"心脏 · 血管", dept:"心内科", ref:"中国成人血脂异常防治指南 · 2023", view:0,
+    tier:{2024:"green",2025:"amber",2026:"amber"},
+    inds:[{ n:"总胆固醇", ref:"< 5.2 mmol/L", vals:["4.9","5.4","5.8"], c:"amber" },
+          { n:"收缩压", ref:"< 130 mmHg", vals:["125","135","145"], c:"amber" }],
+    experts:[{ w:"心内科", t:"血脂与血压同向上行，动脉承受叠加负担；当前幅度未达用药线，处于生活方式可逆区间。" },
+             { w:"内分泌与代谢科", t:"两项与体重上升高度同步，属代谢链下游——减重是共同的根。" }],
+    summary:"尚未到用药程度，但要在 3 个月窗口内让曲线掉头，否则长期心血管风险持续累积。",
+    acts:["<b>3 个月内复查血脂四项</b>（重点 LDL-C）+ 连续 7 天家庭血压取均值","控油盐 + 每周 150 分钟有氧，与 90 天减重同步","复查后由医生评估是否需要药物干预"] },
+  liver:{ name:"肝脏", dept:"消化内科 / 肝病科", ref:"EASL–EASD–EASO MASLD 临床实践指南 · 2024", view:1,
+    tier:{2024:"green",2025:"blue",2026:"blue"},
+    inds:[{ n:"ALT（谷丙转氨酶）", ref:"9 – 40 U/L", vals:["32","38","56"], c:"amber" }],
+    experts:[{ w:"消化内科 / 肝病科", t:"ALT 轻中度升高，常见诱因是脂肪肝、饮酒与近期作息；建议先排查脂肪肝，不急于下结论。" }],
+    summary:"观察项——先找诱因、半年复核，重点排查脂肪肝。",
+    acts:["记录两周饮食 / 饮酒 / 作息，寻找诱因","减少酒精与夜宵","<b>6 个月复查肝功能 + 肝胆彩超</b>（排查脂肪肝）"] },
+  meta:{ name:"胰 · 代谢", dept:"内分泌与代谢科", ref:"ADA 糖尿病诊疗标准 · 2026", view:0,
+    tier:{2024:"amber",2025:"amber",2026:"amber"},
+    inds:[{ n:"空腹血糖", ref:"3.9 – 6.1 mmol/L", vals:["5.4","6.1","7.2"], c:"red" },
+          { n:"BMI", ref:"18.5 – 23.9", vals:["24.5","25.9","26.8"], c:"amber" }],
+    experts:[{ w:"内分泌与代谢科", t:"血糖三年连升且已达需确认区间，与体重同步——胰岛素抵抗可能性大，先 HbA1c 定档。" },
+             { w:"营养与健康管理", t:"BMI 是带动血糖的主因；减重 5%–10%，血糖大概率跟着回落，当前仍在可干预阶段。" }],
+    summary:"全身干预回报最高的器官：先确认（HbA1c），同步减重——确认不等于等待，两条并行。",
+    acts:["<b>1–2 周内 HbA1c 确认血糖档位</b>（单次 7.2 不等于确诊）","今天启动 90 天减重：晚餐减精制主食 + 每周 150 分钟有氧","第 90 天复查空腹血糖与体重，验证回落"] },
+  prostate:{ name:"前列腺", dept:"泌尿外科", ref:"AUA/SUO 前列腺癌早期发现指南 · 2023", view:0,
+    tier:{2024:"green",2025:"amber",2026:"red"},
+    inds:[{ n:"PSA（前列腺特异抗原）", ref:"< 4.0 ng/mL", vals:["1.2","2.2","3.8"], c:"red", note:"数值未超标，但三年增长 3 倍，升速异常" }],
+    experts:[{ w:"泌尿外科", t:"对 PSA 而言升速比数值更要紧——可能是炎症、增生，也可能是更严重问题的早期信号，应尽快专科复核。" }],
+    summary:"全身最优先排查项：未见急危信号，但必须在 1–2 周内查清楚——现在查，处理窗口最好。",
+    acts:["<b>1–2 周内泌尿外科复查 PSA / fPSA 及比值</b>（复查前 48 小时避免骑行）","必要时加做前列腺超声","按复查结果定随访节奏（炎症 / 增生通常 3–6 个月复测）"] },
+  kidney:{ name:"双肾", dept:"肾内科", ref:"KDIGO 慢性肾脏病指南 · 2024", view:2,
+    tier:{2024:"green",2025:"amber",2026:"red"},
+    inds:[{ n:"尿蛋白（UACR）", ref:"< 30 mg/g", vals:["—","—","280"], c:"red", note:"2026 首次检出，超出参考上限约 9 倍" },
+          { n:"尿酸", ref:"< 420 μmol/L", vals:["380","430","480"], c:"amber" }],
+    experts:[{ w:"肾内科", t:"280 属重度异常，叠加血糖血压上行，主张尽快专科评估。" },
+             { w:"全科视角", t:"单次检出可能受剧烈运动、感染干扰，可先复查晨尿排除假阳性，再决定是否专科。" }],
+    summary:"两种意见已复核：1–2 周内晨尿复查先行；<b>若复查仍异常，立即转肾内科</b>——兜底已设定。",
+    acts:["<b>1–2 周内留晨尿复查 UACR + 血肌酐 / eGFR</b>","复查前 48 小时避免剧烈运动，排除干扰因素","若仍异常 → 直接挂肾内科；同步减少高嘌呤饮食与酒精（尿酸）"] }
+};
+const YRCAP = {
+  2024:"<b>2024</b>：基本平稳 · 仅胰·代谢一处橙灯",
+  2025:"<b>2025</b>：多项越线 · 前列腺与双肾在变黄",
+  2026:"<b>2026</b>：两处红灯 · 转到背面看看你的肾"
+};
+let year = 2026;
+
+/* ===== 着色 ===== */
+function paintMap(){
+  document.querySelectorAll(".omark").forEach(m => {
+    const o = ORGANS[m.dataset.organ];
+    const c = C[o.tier[year]] || C.green;
+    const od = m.querySelector(".od");
+    od.style.background = c;
+    od.style.boxShadow = `0 0 12px ${c}, 0 0 26px ${c}`;
+    od.style.animationDuration = o.tier[year] === "red" ? "1.4s" : "2.6s";
+  });
+  document.getElementById("yrCap").innerHTML = YRCAP[year];
+}
+document.querySelectorAll(".yr").forEach(b => b.addEventListener("click", () => {
+  year = +b.dataset.y;
+  document.querySelectorAll(".yr").forEach(x => x.classList.toggle("on", x === b));
+  paintMap();
+}));
+
+/* ===== 全息人体（真实 GLB · 地球仪式拖动） ===== */
+const stage = document.getElementById("stage");
+const cv = document.getElementById("bodyCv");
+const marks = document.getElementById("marks");
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+/* 器官标记（x 右 / y 上 / z 朝向观众），与 GLB 归一化后的身体比例对齐 */
+const ORG3D = {
+  thyroid:[0,1.2,.48],
+  heart:[.18,.72,.54],
+  liver:[-.28,.42,.5],
+  meta:[.06,.12,.55],
+  prostate:[0,-.62,.48],
+  kidney:[0,.1,-.56]
+};
+const ONAMES = { thyroid:"甲状腺", heart:"心脏·血管", liver:"肝脏", meta:"胰·代谢", prostate:"前列腺", kidney:"双肾·背面" };
+marks.innerHTML = Object.keys(ORG3D).map(k =>
+  `<button class="omark" data-organ="${k}" type="button"><span class="od"></span><span class="ol">${ONAMES[k]}</span></button>`).join("");
+const markEls = {}; document.querySelectorAll(".omark").forEach(m => markEls[m.dataset.organ] = m);
+
+let A = -14, vel = 0, targetA = null, spinning = false, dragDist = 0;
+let pointerX = null;
+const threeScene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(28, 1, .1, 100);
+camera.position.set(0, .14, 7.7);
+
+const renderer = new THREE.WebGLRenderer({
+  canvas: cv,
+  alpha: true,
+  antialias: true,
+  preserveDrawingBuffer: true,
+  powerPreference: "high-performance"
+});
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = .9;
+
+const root = new THREE.Group();
+root.position.y = -.05;
+threeScene.add(root);
+threeScene.add(new THREE.AmbientLight(0xdfe8ff, 1.05));
+
+const keyLight = new THREE.DirectionalLight(0xf8fbff, 1.12);
+keyLight.position.set(2.3, 3.6, 4.2);
+threeScene.add(keyLight);
+
+const rimLight = new THREE.DirectionalLight(0x8d7cff, 1.86);
+rimLight.position.set(-3.4, 1.2, -2.5);
+threeScene.add(rimLight);
+
+const bodyMaterial = new THREE.MeshPhysicalMaterial({
+  color: 0x6f7dff,
+  emissive: 0x302889,
+  emissiveIntensity: .16,
+  roughness: .22,
+  metalness: .02,
+  transparent: true,
+  opacity: .56,
+  depthWrite: false,
+  side: THREE.DoubleSide,
+  clearcoat: .68,
+  clearcoatRoughness: .24
+});
+const shellMaterial = new THREE.MeshBasicMaterial({
+  color: 0x9c9bff,
+  transparent: true,
+  opacity: .065,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false,
+  side: THREE.BackSide
+});
+const wireMaterial = new THREE.MeshBasicMaterial({
+  color: 0xc8d2ff,
+  wireframe: true,
+  transparent: true,
+  opacity: .046,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false
+});
+const ringMaterial = new THREE.MeshBasicMaterial({
+  color: 0x9faeff,
+  transparent: true,
+  opacity: .13,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false
+});
+
+const modelHolder = new THREE.Group();
+modelHolder.position.y = -0.38;   /* 人模垂直位置，使下巴对准甲状腺节点 */
+root.add(modelHolder);
+
+function resize3D(){
+  const w = stage.clientWidth, h = stage.clientHeight;
+  if(!w || !h) return;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize3D).observe(stage);
+addEventListener("resize", resize3D);
+
+function azOf(k){ return Math.atan2(ORG3D[k][0], ORG3D[k][2]) * 180 / Math.PI; }
+function updateMarks(){
+  const rect = stage.getBoundingClientRect();
+  root.updateMatrixWorld(true);
+  Object.keys(ORG3D).forEach(k => {
+    const p = new THREE.Vector3(...ORG3D[k]).applyMatrix4(root.matrixWorld).project(camera);
+    const f = Math.max(0, Math.cos((azOf(k) + A) * Math.PI / 180));
+    const m = markEls[k];
+    m.style.left = ((p.x * .5 + .5) * rect.width) + "px";
+    m.style.top = ((-.5 * p.y + .5) * rect.height) + "px";
+    m.style.opacity = (.12 + .88 * f).toFixed(2);
+    m.style.zIndex = f > .5 ? 6 : 1;
+    m.style.transform = `translate(-50%,-50%) scale(${(.82 + .28 * f).toFixed(2)})`;
+    const ol = m.querySelector(".ol");
+    if(ol) ol.classList.toggle("lft", p.x < 0);
+  });
+}
+function updateViewName(){
+  const n = ((A % 360) + 360) % 360;
+  document.getElementById("viewName").textContent = ["正 面","左 侧","背 面","右 侧"][Math.round(n / 90) % 4];
+}
+function rotateToAngle(t){
+  spinning = false; vel = 0;
+  const cur = ((A % 360) + 360) % 360;
+  targetA = A + (((t - cur + 540) % 360) - 180);
+}
+function rotateOrganFront(k){ rotateToAngle(-azOf(k)); }
+function addGlowPoint(position, color = 0x9fb2ff, radius = .021, opacity = .52){
+  const material = new THREE.MeshBasicMaterial({
+    color,
+    transparent: true,
+    opacity,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  });
+  const point = new THREE.Mesh(new THREE.SphereGeometry(radius, 18, 12), material);
+  point.position.set(...position);
+  root.add(point);
+
+  const halo = new THREE.Mesh(new THREE.SphereGeometry(radius * 3.3, 18, 12), material.clone());
+  halo.material.opacity = opacity * .11;
+  halo.position.copy(point.position);
+  root.add(halo);
+}
+[
+  [0,1.52,.38],[0,1.12,.44],[0,.76,.48],[0,.38,.45],[0,.02,.39],[0,-.34,.34],
+  [-.58,1.08,.32],[.58,1.08,.32],[-.72,.22,.28],[.72,.22,.28],
+  [-.28,-1.22,.26],[.28,-1.22,.26],[-.22,-2.03,.23],[.22,-2.03,.23]
+].forEach(p => addGlowPoint(p));
+addGlowPoint([0,.64,.56], 0xff496b, .045, .9);
+addGlowPoint([.18,-.08,.5], 0xffc948, .042, .86);
+addGlowPoint([-.18,-1.42,.36], 0x23c99b, .038, .86);
+
+const scanLine = new THREE.Mesh(
+  new THREE.BoxGeometry(2.25, .016, .018),
+  new THREE.MeshBasicMaterial({
+    color: 0xd8e1ff,
+    transparent: true,
+    opacity: .32,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  })
+);
+scanLine.position.set(0, .42, .62);
+root.add(scanLine);
+
+function buildIntroBodyImage(){
+  const img = document.getElementById("introBodyModel");
+  const frame = document.getElementById("introBodyFrame");
+  if(!img || !frame) return;
+  resize3D();
+
+  const hiddenParts = [scanLine];
+  const oldVisibility = hiddenParts.map(part => part.visible);
+  const oldRotationY = root.rotation.y;
+  hiddenParts.forEach(part => part.visible = false);
+  root.rotation.y = 0;
+  root.updateMatrixWorld(true);
+  renderer.render(threeScene, camera);
+
+  const source = renderer.domElement;
+  const w = source.width, h = source.height;
+  const scratch = document.createElement("canvas");
+  scratch.width = w; scratch.height = h;
+  const ctx = scratch.getContext("2d", { willReadFrequently:true });
+  ctx.drawImage(source, 0, 0);
+  const pixels = ctx.getImageData(0, 0, w, h).data;
+  let minX = w, minY = h, maxX = 0, maxY = 0;
+  for(let y = 0; y < h; y++){
+    for(let x = 0; x < w; x++){
+      const a = pixels[(y * w + x) * 4 + 3];
+      if(a > 8){
+        if(x < minX) minX = x;
+        if(y < minY) minY = y;
+        if(x > maxX) maxX = x;
+        if(y > maxY) maxY = y;
+      }
+    }
+  }
+
+  hiddenParts.forEach((part, i) => part.visible = oldVisibility[i]);
+  root.rotation.y = oldRotationY;
+  root.updateMatrixWorld(true);
+
+  if(maxX <= minX || maxY <= minY) return;
+  const pad = Math.round(Math.min(w, h) * .045);
+  const sx = clamp(minX - pad, 0, w);
+  const sy = clamp(minY - pad, 0, h);
+  const sw = clamp(maxX - minX + pad * 2, 1, w - sx);
+  const sh = clamp(maxY - minY + pad * 2, 1, h - sy);
+  const out = document.createElement("canvas");
+  out.width = sw; out.height = sh;
+  out.getContext("2d").drawImage(scratch, sx, sy, sw, sh, 0, 0, sw, sh);
+  img.src = out.toDataURL("image/png");
+  img.classList.add("ready");
+  frame.classList.add("has-model");
+}
+
+async function loadBodyModel(){
+  try{
+    const gltf = await new GLTFLoader().loadAsync(BODY_MODEL_URL);
+    const model = gltf.scene;
+    const modelMeshes = [];
+    model.traverse(child => {
+      if(child.isMesh) modelMeshes.push(child);
+    });
+    modelMeshes.forEach(child => {
+      child.geometry?.computeVertexNormals();
+      child.material = bodyMaterial;
+      child.renderOrder = 2;
+
+      const shell = new THREE.Mesh(child.geometry, shellMaterial);
+      shell.scale.setScalar(1.035);
+      shell.renderOrder = 1;
+      child.add(shell);
+
+      const wire = new THREE.Mesh(child.geometry, wireMaterial);
+      wire.scale.setScalar(1.012);
+      wire.renderOrder = 3;
+      child.add(wire);
+    });
+
+    const box = new THREE.Box3().setFromObject(model);
+    const size = new THREE.Vector3();
+    const center = new THREE.Vector3();
+    box.getSize(size);
+    box.getCenter(center);
+    model.position.set(-center.x, -center.y, -center.z);
+    modelHolder.add(model);
+    modelHolder.scale.setScalar(4.32 / size.y);
+    stage.dataset.renderMode = "glb";
+    requestAnimationFrame(buildIntroBodyImage);
+  }catch(error){
+    console.error("Body GLB loading failed", error);
+    stage.dataset.renderMode = "fallback";
+  }
+}
+
+function tick(){
+  if(targetA !== null){
+    const d = targetA - A;
+    if(Math.abs(d) < .4){ A = targetA; targetA = null; }
+    else A += d * .14;
+  } else if(vel){
+    A += vel; vel *= .94;
+    if(Math.abs(vel) < .04) vel = 0;
+  } else if(spinning){
+    A += .12;
+  }
+  const elapsed = performance.now() / 1000;
+  root.rotation.y += ((A * Math.PI / 180) - root.rotation.y) * .1;
+  scanLine.position.y = .42 + Math.sin(elapsed * 1.28) * .9;
+  scanLine.material.opacity = .24 + Math.sin(elapsed * 2.1) * .08;
+  updateViewName();
+  renderer.render(threeScene, camera);
+  updateMarks();
+  requestAnimationFrame(tick);
+}
+stage.addEventListener("pointerdown", e => {
+  pointerX = e.clientX; dragDist = 0; spinning = false; targetA = null; vel = 0;
+  stage.setPointerCapture?.(e.pointerId);
+});
+stage.addEventListener("pointermove", e => {
+  if(pointerX === null) return;
+  const dx = e.clientX - pointerX; pointerX = e.clientX;
+  dragDist += Math.abs(dx);
+  A += dx * .45; vel = dx * .45;
+});
+stage.addEventListener("pointerup", e => {
+  pointerX = null;
+  if(stage.hasPointerCapture?.(e.pointerId)) stage.releasePointerCapture(e.pointerId);
+});
+addEventListener("pointerup", () => pointerX = null);
+document.getElementById("rotL").addEventListener("click", () => { spinning = false; vel = 0; targetA = (targetA ?? A) - 90; });
+document.getElementById("rotR").addEventListener("click", () => { spinning = false; vel = 0; targetA = (targetA ?? A) + 90; });
+resize3D(); loadBodyModel(); tick();
+
+/* ===== 下钻 ===== */
+const sheet = document.getElementById("sheet");
+function openSheet(key){
+  const o = ORGANS[key];
+  document.getElementById("shName").textContent = o.name;
+  document.getElementById("shDept").textContent = o.dept;
+  let h = '<div class="sec-t">① 指标 · 三年变化与参考范围</div>';
+  o.inds.forEach(d => {
+    h += `<div class="ind"><div class="ind-top"><b>${d.n}</b><span>参考 ${d.ref}</span></div><div class="ind-vals">`
+      + d.vals.map((v,i) => {
+          const hot = i === 2;
+          return `<span class="iv ${hot?'hot':''}"><em>${2024+i}</em><b${hot?` style="color:${C[d.c]}"`:''}>${v}</b></span>`;
+        }).join('<i class="arr">→</i>')
+      + `</div>${d.note ? `<div class="ind-note">${d.note}</div>` : ''}</div>`;
+  });
+  h += '<div class="sec-t">② 多学科解读 · 综合评估</div>';
+  o.experts.forEach(e => h += `<div class="exp"><b>${e.w}</b><p>${e.t}</p></div>`);
+  h += `<div class="sum-box">${o.summary}</div>`;
+  h += '<div class="sec-t">③ 怎么解决</div>';
+  o.acts.forEach((a,i) => h += `<div class="act-li"><span>${i+1}</span><p>${a}</p></div>`);
+  h += `<div class="ref">${o.ref}</div>`;
+  document.getElementById("shBody").innerHTML = h;
+  qIdx = ORDER.indexOf(key);
+  document.getElementById("shStep").textContent = `问题 ${qIdx + 1} / ${ORDER.length}`;
+  document.getElementById("shNext").textContent = qIdx >= ORDER.length - 1 ? "查看三年报告" : "下一个问题 →";
+  sheet.classList.add("on");
+}
+function closeSheet(){ sheet.classList.remove("on"); }
+document.querySelectorAll(".omark").forEach(el => {
+  let sx = null, sy = null, moved = false;
+  el.addEventListener("pointerdown", e => { e.stopPropagation(); sx = e.clientX; sy = e.clientY; moved = false; });
+  el.addEventListener("pointermove", e => { if(sx !== null && Math.hypot(e.clientX - sx, e.clientY - sy) > 8) moved = true; });
+  el.addEventListener("pointerup", e => { e.stopPropagation(); if(sx !== null && !moved) openSheet(el.dataset.organ); sx = null; });
+});
+document.getElementById("shClose").addEventListener("click", closeSheet);
+
+/* ===== 风险定位（按缓急排序 · 用户节奏） ===== */
+const ORDER = ["prostate","kidney","meta","heart","liver","thyroid"];
+const RINFO = {
+  prostate:["PSA 三年 ×3，升速异常","优先处理","red"],
+  kidney:["尿蛋白超标 9 倍 · 在背面","优先处理","red"],
+  meta:["空腹血糖 7.2 · 需确认","需要管理","amber"],
+  heart:["胆固醇 5.8 + 血压 145","需要管理","amber"],
+  liver:["ALT 56 · 先找诱因","保持观察","blue"],
+  thyroid:["TI-RADS 3 类 · 无进展","保持观察","blue"]
+};
+document.getElementById("rlRows").innerHTML = ORDER.map(k =>
+  `<button class="rl-row" data-loc="${k}" type="button"><span class="rd" style="background:${C[RINFO[k][2]]}"></span><span class="rt"><b>${ONAMES[k]}</b><span>${RINFO[k][0]}</span></span><span class="chip ${RINFO[k][2]}">${RINFO[k][1]}</span><span class="arr2">›</span></button>`).join("");
+const rlist = document.getElementById("rlist");
+let qIdx = 0;
+function focusOrgan(k){
+  rlist.classList.remove("on");
+  closeSheet();
+  rotateOrganFront(k);
+  setTimeout(() => openSheet(k), 640);
+}
+document.getElementById("locateBtn").addEventListener("click", () => { closeSheet(); rlist.classList.add("on"); });
+document.getElementById("rlClose").addEventListener("click", () => rlist.classList.remove("on"));
+document.querySelectorAll("[data-loc]").forEach(b => b.addEventListener("click", () => focusOrgan(b.dataset.loc)));
+document.getElementById("shNext").addEventListener("click", () => {
+  if(qIdx >= ORDER.length - 1){ closeSheet(); document.getElementById("summary").classList.add("on"); }
+  else focusOrgan(ORDER[qIdx + 1]);
+});
+document.getElementById("sumBtn").addEventListener("click", () => { closeSheet(); rlist.classList.remove("on"); document.getElementById("summary").classList.add("on"); });
+document.getElementById("sumClose").addEventListener("click", () => document.getElementById("summary").classList.remove("on"));
+
+/* ===== 揭幕片 ===== */
+const intro = document.getElementById("intro");
+const steps = document.querySelectorAll("#isteps i");
+let timers = [];
+const starBox = document.getElementById("stars");
+const starC = ["#818cf8","#6d5bd0","#2f6fd6","#0891b2","#d97706","#d24a43"];
+let starHtml = "";
+for(let i = 0; i < 46; i++){
+  const c = starC[i % starC.length];
+  starHtml += `<span class="star" style="--x:${8+Math.random()*84}%;--y:${8+Math.random()*84}%;--s:${2+Math.random()*4}px;--c:${c};--d:${1.4+Math.random()*2.4}s"></span>`;
+}
+starBox.innerHTML = starHtml;
+
+function scene(n){
+  [1,2,3].forEach(i => document.getElementById("is"+i).classList.toggle("on", i === n));
+  steps.forEach((d,i) => d.classList.toggle("on", i === n-1));
+  intro.classList.toggle("fin", n === 3);   /* 终幕隐藏跳过，等待点击 */
+}
+function playIntro(){
+  intro.classList.remove("hidden");
+  document.getElementById("is2").classList.remove("zooming");
+  timers.forEach(clearTimeout); timers = [];
+  if(reduced){ scene(3); return; }
+  scene(1);
+  const T = (fn,ms) => timers.push(setTimeout(fn,ms));
+  T(() => scene(2), 2600);
+  T(() => document.getElementById("is2").classList.add("zooming"), 5600);
+  T(() => scene(3), 7600);                  /* 终幕停留，不自动跳转 */
+}
+function endIntro(){
+  timers.forEach(clearTimeout); timers = [];
+  intro.classList.add("hidden");
+  try{ localStorage.setItem("c2introSeen","1"); }catch(e){}
+}
+document.getElementById("skipBtn").addEventListener("click", endIntro);
+document.getElementById("enterBtn").addEventListener("click", endIntro);
+document.getElementById("replayBtn").addEventListener("click", playIntro);
+const forceIntro = (() => {
+  try{
+    const force = new URLSearchParams(location.search).get("intro") === "1";
+    if(force) history.replaceState(null, "", location.pathname + location.hash);
+    return force;
+  }catch(e){ return false; }
+})();
+let seen = false;
+try{ seen = localStorage.getItem("c2introSeen") === "1"; }catch(e){}
+forceIntro || !seen ? playIntro() : intro.classList.add("hidden");
+
+paintMap();
+</script>
+</body>
+</html>
