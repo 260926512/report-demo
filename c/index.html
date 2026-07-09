@@ -207,6 +207,21 @@ button{ border:0; background:none; font:inherit; color:inherit; cursor:pointer; 
   background:radial-gradient(80% 60% at 50% 20%, rgba(109,91,208,.13), transparent 62%), linear-gradient(180deg,#f8f8fd,#eaecf8);
   color:var(--txt); }
 .intro.hidden{ display:none; }
+.load-cover{ position:absolute; inset:0; z-index:130; display:flex; align-items:center; justify-content:center; padding:30px;
+  background:radial-gradient(80% 58% at 50% 22%, rgba(109,91,208,.16), transparent 64%), linear-gradient(180deg,#f8f8fd,#eaecf8);
+  color:var(--txt); opacity:1; transition:opacity .45s ease; }
+.load-cover.hidden{ opacity:0; pointer-events:none; }
+.load-card{ width:min(310px,calc(100vw - 52px)); text-align:center; }
+.load-orbit{ width:82px; height:82px; border-radius:50%; margin:0 auto 18px; position:relative;
+  background:radial-gradient(circle at 50% 50%, rgba(109,91,208,.2), rgba(47,111,214,.06) 52%, transparent 53%); }
+.load-orbit::before,.load-orbit::after{ content:""; position:absolute; inset:8px; border-radius:50%; border:2px solid rgba(109,91,208,.18); border-top-color:#6d5bd0; animation:loadSpin 1.1s linear infinite; }
+.load-orbit::after{ inset:22px; border-color:rgba(47,111,214,.14); border-bottom-color:#2f6fd6; animation-duration:1.5s; animation-direction:reverse; }
+.load-card b{ display:block; font-size:17px; letter-spacing:1px; }
+.load-card p{ margin-top:10px; font-size:12.5px; line-height:1.8; color:var(--txt2); }
+.load-bar{ margin:18px auto 0; width:168px; height:5px; border-radius:99px; overflow:hidden; background:rgba(109,91,208,.12); }
+.load-bar i{ display:block; width:42%; height:100%; border-radius:99px; background:linear-gradient(90deg,#6d5bd0,#2f6fd6); animation:loadMove 1.2s ease-in-out infinite; }
+@keyframes loadSpin{ to{ transform:rotate(360deg); } }
+@keyframes loadMove{ 0%{ transform:translateX(-110%); } 100%{ transform:translateX(260%); } }
 .intro.fin .intro-skip{ display:none; }
 .intro-skip{ position:absolute; top:24px; right:20px; z-index:30; min-height:44px; padding:0 18px; border-radius:99px;
   color:var(--txt2); font-size:12px; letter-spacing:2px; background:rgba(255,255,255,.8); border:1px solid var(--line); }
@@ -267,6 +282,15 @@ button{ border:0; background:none; font:inherit; color:inherit; cursor:pointer; 
 
 <div class="phone"><div class="screen">
   <div class="island"></div>
+
+  <div class="load-cover" id="cLoad" aria-live="polite">
+    <div class="load-card">
+      <div class="load-orbit"></div>
+      <b>正在准备身体地图</b>
+      <p>加载 3D 身体模型与三年报告结论，准备好后会从开场重新进入。</p>
+      <div class="load-bar"><i></i></div>
+    </div>
+  </div>
 
   <!-- ============ 揭幕片「体内漫游」 ============ -->
   <div class="intro" id="intro">
@@ -409,6 +433,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const intro = document.getElementById("intro");
     if(!intro) return;
     const fileMode = location.protocol === "file:";
+    document.getElementById("cLoad")?.classList.add("hidden");
     intro.className = "intro";
     intro.innerHTML = `<div class="launch-fallback">
       <b>${fileMode ? "请用启动脚本打开" : "页面资源没有加载完整"}</b>
@@ -749,9 +774,11 @@ async function loadBodyModel(){
     modelHolder.scale.setScalar(4.32 / size.y);
     stage.dataset.renderMode = "glb";
     requestAnimationFrame(buildIntroBodyImage);
+    return true;
   }catch(error){
     console.error("Body GLB loading failed", error);
     stage.dataset.renderMode = "fallback";
+    return false;
   }
 }
 
@@ -792,7 +819,9 @@ stage.addEventListener("pointerup", e => {
 addEventListener("pointerup", () => pointerX = null);
 document.getElementById("rotL").addEventListener("click", () => { spinning = false; vel = 0; targetA = (targetA ?? A) - 90; });
 document.getElementById("rotR").addEventListener("click", () => { spinning = false; vel = 0; targetA = (targetA ?? A) + 90; });
-resize3D(); loadBodyModel(); tick();
+resize3D();
+const bodyReady = loadBodyModel();
+tick();
 
 /* ===== 下钻 ===== */
 const sheet = document.getElementById("sheet");
@@ -906,7 +935,16 @@ const forceIntro = (() => {
 })();
 let seen = false;
 try{ seen = localStorage.getItem("c2introSeen") === "1"; }catch(e){}
-forceIntro || !seen ? playIntro() : intro.classList.add("hidden");
+const shouldPlayIntro = forceIntro || !seen;
+function startAfterLoading(){
+  const loader = document.getElementById("cLoad");
+  if(loader){
+    loader.classList.add("hidden");
+    setTimeout(() => loader.remove(), 520);
+  }
+  shouldPlayIntro ? playIntro() : intro.classList.add("hidden");
+}
+bodyReady.finally(() => setTimeout(startAfterLoading, 520));
 
 paintMap();
 </script>

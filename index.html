@@ -29,11 +29,15 @@ body{ min-height:100dvh; color:var(--txt); font-family:var(--sans); padding:calc
   backdrop-filter:blur(24px); box-shadow:inset 0 1px 0 rgba(255,255,255,.72), 0 14px 30px rgba(28,46,70,.08);
   transition:transform .15s ease; }
 .card:active{ transform:scale(.985); }
+.card.loading{ pointer-events:none; transform:scale(.985); }
 .card .tag{ font-size:11px; font-weight:800; letter-spacing:3px; color:var(--teal); }
 .card h2{ font-size:20px; font-weight:800; margin:8px 0 8px; letter-spacing:.5px; }
 .card p{ font-size:13px; color:var(--txt2); line-height:1.75; }
 .card .go{ margin-top:14px; display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:700; color:var(--teal); }
 .card .go svg{ width:15px; height:15px; stroke:currentColor; fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+.card.loading .go::before{ content:""; width:12px; height:12px; border-radius:50%; border:2px solid rgba(15,148,136,.18); border-top-color:var(--teal); animation:spin .8s linear infinite; }
+.card.loading .go svg{ display:none; }
+@keyframes spin{ to{ transform:rotate(360deg); } }
 .card .bar{ position:absolute; left:0; top:0; bottom:0; width:5px; }
 .card.a .bar{ background:linear-gradient(180deg,#b8941f,#c23a2b); }
 .card.b .bar{ background:linear-gradient(180deg,#0f9488,#0e7490); }
@@ -77,5 +81,16 @@ body{ min-height:100dvh; color:var(--txt); font-family:var(--sans); padding:calc
 
   <p class="note">本预览用于内部方案评审 · 不构成医疗诊断与治疗建议 · 结论以执业医师面诊为准</p>
 </div>
+<script>
+document.querySelector(".card.c")?.addEventListener("click", e => {
+  e.preventDefault();
+  const card = e.currentTarget;
+  card.classList.add("loading");
+  card.setAttribute("aria-busy", "true");
+  const go = card.querySelector(".go");
+  if(go) go.textContent = "正在准备 3D 身体地图";
+  setTimeout(() => { location.href = card.href; }, 180);
+});
+</script>
 </body>
 </html>
